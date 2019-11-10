@@ -1,0 +1,3 @@
+[submodule "torch_vggish"]
+	path = torch_vggish
+	url = https://github.com/JamesRick/audioset-vggish-tensorflow-to-pytorch
