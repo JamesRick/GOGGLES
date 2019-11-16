@@ -16,16 +16,17 @@ class Context:
         self._layer_idx = layer_idx
         self._model_out_dict = dict()
 
-    def get_model_output(self, image_idx):
-        if image_idx not in self._model_out_dict:
-            x = self.dataset[image_idx]
-            x = x.view((1,) + x.size())
+    def get_model_output(self, audio_idx):
+        if audio_idx not in self._model_out_dict:
+            x = self.dataset[audio_idx][0][0]
+            x = torch.from_numpy(x).unsqueeze(dim=0)
+            x = x.view((1,) + x.size()).type('torch.FloatTensor')
             x = _make_cuda(torch.autograd.Variable(x, requires_grad=False))
 
-            self._model_out_dict[image_idx] = \
+            self._model_out_dict[audio_idx] = \
                 self.model.forward(x, layer_idx=self._layer_idx)[0]
 
-        z = self._model_out_dict[image_idx]
+        z = self._model_out_dict[audio_idx]
         return z
 
 
@@ -101,15 +102,10 @@ def _get_score_matrix_for_image(image_idx, num_max_proposals, context):
     return np.array(score_matrix), column_ids
 
 
-def nn_AFs(dataset,layer_idx, num_max_proposals,cache=False):
+def audio_nn_AFs(dataset, layer_idx, num_max_proposals, cache=False, version='v0'):
     affinity_matrix_list = [[] for _ in range(num_max_proposals)]
-    # out_filename = '.'.join([
-    #     'v2',
-    #     f'vgg16_layer{layer_idx:02d}',
-    #     f'k{num_max_proposals:02d}',
-    #     'scores.npz'])
     out_filename = '.'.join([
-    'v0',
+    version,
     f'vggish_wrapper_layer{layer_idx:02d}',
     f'k{num_max_proposals:02d}',
     'scores.npz'])
@@ -118,6 +114,11 @@ def nn_AFs(dataset,layer_idx, num_max_proposals,cache=False):
     out_filepath = os.path.join(out_dirpath, out_filename)
     if cache:
         try:
+            dataset_shape = num_max_proposals * len(dataset) * len(dataset)
+            cache_shape = affinity_matrix_arr.shape[0] * affinity_matrix_arr.shape[1] * affinity_matrix_arr.shape[2]
+            if dataset_shape != cache_shape:
+                print(str(dataset_shape) + '!=' + str(cache_shape))
+                return
             affinity_matrix_arr = np.load(out_filepath)['scores']
             for i in range(num_max_proposals):
                 affinity_matrix_list[i] = (np.squeeze(affinity_matrix_arr[i,:,:]))
@@ -128,10 +129,10 @@ def nn_AFs(dataset,layer_idx, num_max_proposals,cache=False):
     # model = _make_cuda(Vgg16())
     context = Context(model=model, dataset=dataset, layer_idx=layer_idx)
     #all_column_ids = list()
-    for image_idx in trange(len(context.dataset)):
+    for audio_idx in trange(len(context.dataset)):
         scores, cols = _get_score_matrix_for_image(
-            image_idx, num_max_proposals, context)
-        for i in range(min(num_max_proposals,scores.shape[1])):
+            audio_idx, num_max_proposals, context)
+        for i in range(min(num_max_proposals, scores.shape[1])):
             affinity_matrix_list[i].append(scores[:,i])
         #all_column_ids += cols
     for i in range(num_max_proposals):
