@@ -4,7 +4,8 @@ import pandas as pd
 from sklearn.metrics import accuracy_score
 if __name__ == '__main__':
     dataset = GogglesDataset.load_all_data("../data/cub_dataset/images")
-    afs = construct_image_affinity_matrices(dataset)
+    afs = construct_image_affinity_matrices(dataset, cache=True)
+    #import pdb; pdb.set_trace()
     dev_set_indices, dev_set_labels = [0,1,2,90,91,92],[0,0,0,1,1,1]
     y_true = pd.read_csv("../data/cub_dataset/labels.csv")
     y_true = y_true['y'].values
