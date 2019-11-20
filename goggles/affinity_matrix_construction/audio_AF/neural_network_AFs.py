@@ -5,6 +5,8 @@ from tqdm import trange
 import numpy as np
 from goggles.utils.constants import *
 from .pretrained_models.vggish_wrapper import VGGish_wrapper
+from .pretrained_models.soundnet_wrapper import Soundnet_wrapper
+from multiprocessing import Pool
 
 _make_cuda = lambda x: x.cuda() if torch.cuda.is_available() else x
 
@@ -160,6 +162,7 @@ def audio_nn_AFs(dataset, layer_idx, num_max_proposals, cache=False, version='v0
     """
 
     affinity_matrix_list = [[] for _ in range(num_max_proposals)]
+    # affinity_matrix_list = [np.zeros((len(dataset),) * 2) for _ in range(num_max_proposals)]
     out_filename = '.'.join([
     version,
     f'vggish_wrapper_layer{layer_idx:02d}',
@@ -172,6 +175,10 @@ def audio_nn_AFs(dataset, layer_idx, num_max_proposals, cache=False, version='v0
     # This section tries to load data from the cache file if it exists.
     if cache:
         try:
+            print("Attempting to load cache: " + str(out_filepath))
+            # Loads the cache
+            affinity_matrix_arr = np.load(out_filepath)['scores']
+
             # Added this statement here in case I didn't intend to run
             # caching while trying various combinations of specific classes
             # for a dataset. This will just end the run early.
@@ -182,13 +189,12 @@ def audio_nn_AFs(dataset, layer_idx, num_max_proposals, cache=False, version='v0
                 print(str(dataset_shape) + '!=' + str(cache_shape))
                 return
 
-            # Loads the cache
-            affinity_matrix_arr = np.load(out_filepath)['scores']
             for i in range(num_max_proposals):
                 affinity_matrix_list[i] = (np.squeeze(affinity_matrix_arr[i,:,:]))
             return affinity_matrix_list
-        except:
-            pass
+        except Exception as e:
+            print("Load Cache Failed")
+            print("\n" + str(e) + "\n")
 
     # Loads the VGGish_wrapper model 
     model = _make_cuda(VGGish_wrapper())
@@ -203,7 +209,6 @@ def audio_nn_AFs(dataset, layer_idx, num_max_proposals, cache=False, version='v0
     #    every affinity function so the matrix will be
     #    N X S, where N is the number of examples and 
     #    S is the number of affinity functions.
-    # import pdb; pdb.set_trace()
     for audio_idx in trange(len(context.dataset)):
         scores, cols = _get_score_matrix_for_audio(
             audio_idx, num_max_proposals, context)
@@ -224,3 +229,175 @@ def audio_nn_AFs(dataset, layer_idx, num_max_proposals, cache=False, version='v0
            scores=np.array(affinity_matrix_list),
            num_max_proposals=num_max_proposals)
     return affinity_matrix_list
+
+
+def soundnet_afs(dataset, layer_idx, num_max_proposals, cache=False, version='v0'):
+    """
+    Computes the affinity scores between every instance in the dataset using the 
+    layer_idx as the layer to gather the top-k prototypes from. 
+    This method is called for every max pooling layer of the VGGish model.
+
+    Arguments:
+    dataset   -- The AudioDataset object containing the instances for labeling.
+    layer_idx -- The layer index of the model to gather top-k prototypes from.
+    num_max_proposals -- The number of prototypes to gather from the model, i.e. k.
+
+    Keyword Arguments:
+    cache   -- Declares saving and loading from cache file. (default False)
+    version -- Version tag for the cache. Used in cache filename. (default 'v0')
+    """
+
+    affinity_matrix_list = [[] for _ in range(num_max_proposals)]
+    # affinity_matrix_list = [np.zeros((len(dataset),) * 2) for _ in range(num_max_proposals)]
+    out_filename = '.'.join([
+    version,
+    f'soundnet_wrapper_layer{layer_idx:02d}',
+    f'k{num_max_proposals:02d}',
+    'scores.npz'])
+    out_dirpath = os.path.join(SCRATCH_DIR, 'scores')
+    os.makedirs(out_dirpath, exist_ok=True)
+    out_filepath = os.path.join(out_dirpath, out_filename)
+
+    # This section tries to load data from the cache file if it exists.
+    if cache:
+        try:
+            print("Attempting to load cache: " + str(out_filepath))
+            # Loads the cache
+            affinity_matrix_arr = np.load(out_filepath)['scores']
+
+            # Added this statement here in case I didn't intend to run
+            # caching while trying various combinations of specific classes
+            # for a dataset. This will just end the run early.
+            # (possibly throwing an error at some point)
+            dataset_shape = num_max_proposals * len(dataset) * len(dataset)
+            cache_shape = affinity_matrix_arr.shape[0] * affinity_matrix_arr.shape[1] * affinity_matrix_arr.shape[2]
+            if dataset_shape != cache_shape:
+                print(str(dataset_shape) + '!=' + str(cache_shape))
+                return
+
+            for i in range(num_max_proposals):
+                affinity_matrix_list[i] = (np.squeeze(affinity_matrix_arr[i,:,:]))
+            return affinity_matrix_list
+        except Exception as e:
+            print("Load Cache Failed")
+            print("\n" + str(e) + "\n")
+
+    # Loads the VGGish_wrapper model 
+    model = _make_cuda(Soundnet_wrapper())
+    context = Context(model=model, dataset=dataset, layer_idx=layer_idx)
+
+    # Main Loop:
+    #    Loop through every instance in the dataset.
+    #    for each instance, compute a score matrix
+    #    which is a matrix of affinity scores between
+    #    the current example and every other example in
+    #    the dataset. Affinity scores are computed for
+    #    every affinity function so the matrix will be
+    #    N X S, where N is the number of examples and 
+    #    S is the number of affinity functions.
+    for audio_idx in trange(len(context.dataset)):
+        scores, cols = _get_score_matrix_for_audio(
+            audio_idx, num_max_proposals, context)
+
+        
+        for i in range(min(num_max_proposals, scores.shape[1])):
+            affinity_matrix_list[i].append(scores[:,i])
+        #all_column_ids += cols
+
+    for i in range(num_max_proposals):
+        affinity_matrix_list[i] = np.array(affinity_matrix_list[i]).T
+
+    # Saves to cache file if enabled
+    if cache:
+        print('saving output to %s' % out_filepath)
+        np.savez(
+           out_filepath, version=2,
+           scores=np.array(affinity_matrix_list),
+           num_max_proposals=num_max_proposals)
+    return affinity_matrix_list
+
+
+
+    # def audio_nn_AFs_parallel(dataset, layer_idx, num_max_proposals, cache=False, version='v0'):
+    # """
+    # Computes the affinity scores between every instance in the dataset using the 
+    # layer_idx as the layer to gather the top-k prototypes from. 
+    # This method is called for every max pooling layer of the VGGish model.
+
+    # Arguments:
+    # dataset   -- The AudioDataset object containing the instances for labeling.
+    # layer_idx -- The layer index of the model to gather top-k prototypes from.
+    # num_max_proposals -- The number of prototypes to gather from the model, i.e. k.
+
+    # Keyword Arguments:
+    # cache   -- Declares saving and loading from cache file. (default False)
+    # version -- Version tag for the cache. Used in cache filename. (default 'v0')
+    # """
+
+    # # affinity_matrix_list = [[] for _ in range(num_max_proposals)]
+    # affinity_matrix_list = [np.zeros((len(dataset),) * 2) for _ in range(num_max_proposals)]
+    # out_filename = '.'.join([
+    # version,
+    # f'vggish_wrapper_layer{layer_idx:02d}',
+    # f'k{num_max_proposals:02d}',
+    # 'scores.npz'])
+    # out_dirpath = os.path.join(SCRATCH_DIR, 'scores')
+    # os.makedirs(out_dirpath, exist_ok=True)
+    # out_filepath = os.path.join(out_dirpath, out_filename)
+
+    # # This section tries to load data from the cache file if it exists.
+    # if cache:
+    #     try:
+    #         print("Attempting to load cache: " + str(out_filepath))
+    #         # Added this statement here in case I didn't intend to run
+    #         # caching while trying various combinations of specific classes
+    #         # for a dataset. This will just end the run early.
+    #         # (possibly throwing an error at some point)
+    #         dataset_shape = num_max_proposals * len(dataset) * len(dataset)
+    #         cache_shape = affinity_matrix_arr.shape[0] * affinity_matrix_arr.shape[1] * affinity_matrix_arr.shape[2]
+    #         if dataset_shape != cache_shape:
+    #             print(str(dataset_shape) + '!=' + str(cache_shape))
+    #             return
+
+    #         # Loads the cache
+    #         affinity_matrix_arr = np.load(out_filepath)['scores']
+    #         for i in range(num_max_proposals):
+    #             affinity_matrix_list[i] = (np.squeeze(affinity_matrix_arr[i,:,:]))
+    #         return affinity_matrix_list
+    #     except Exception as e:
+    #         print("Load Cache Failed")
+    #         print("\n" + str(e) + "\n")
+
+    # # Loads the VGGish_wrapper model 
+    # model = _make_cuda(VGGish_wrapper())
+    # context = Context(model=model, dataset=dataset, layer_idx=layer_idx)
+
+    # # Main Loop:
+    # #    Loop through every instance in the dataset.
+    # #    for each instance, compute a score matrix
+    # #    which is a matrix of affinity scores between
+    # #    the current example and every other example in
+    # #    the dataset. Affinity scores are computed for
+    # #    every affinity function so the matrix will be
+    # #    N X S, where N is the number of examples and 
+    # #    S is the number of affinity functions.
+    # for audio_idx in trange(len(context.dataset)):
+    #     scores, cols = _get_score_matrix_for_audio(
+    #         audio_idx, num_max_proposals, context)
+
+
+    #     for i in range(min(num_max_proposals, scores.shape[1])):
+    #         affinity_matrix_list[i].append(scores[:,i])
+    #     #all_column_ids += cols
+
+    # for i in range(num_max_proposals):
+    #     affinity_matrix_list[i] = np.array(affinity_matrix_list[i]).T
+
+    # # Saves to cache file if enabled
+    # if cache:
+    #     print('saving output to %s' % out_filepath)
+    #     np.savez(
+    #        out_filepath, version=2,
+    #        scores=np.array(affinity_matrix_list),
+    #        num_max_proposals=num_max_proposals)
+    # return affinity_matrix_list
