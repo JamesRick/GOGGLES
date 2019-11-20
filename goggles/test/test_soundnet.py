@@ -1,6 +1,6 @@
 from goggles import construct_image_affinity_matrices, GogglesDataset,infer_labels
-from goggles.utils.dataset import AudioDataset
-from goggles.affinity_matrix_construction.construct import construct_audio_affinity_matrices
+from goggles.utils.dataset import RawAudioDataset
+from goggles.affinity_matrix_construction.construct import construct_soundnet_affinity_matrices
 import numpy as np
 import pandas as pd
 from sklearn.metrics import accuracy_score
@@ -25,29 +25,31 @@ if __name__ == '__main__':
     # 37_40
     num_cpus = int(os.cpu_count())
     dev_set_size = 5
-    num_prototypes = 4
-    layer_idx_list = [2,5,10,15]
+    num_prototypes = 5
+    layer_idx_list = [3,7,17]
+    # layer_idx_list = [3, 7, 8, 11, 14, 17, 19, 21]
     cache = True
     # version='ESC-10_0_21_v1_trimmed'
     # version='ESC-10_40_41_v1_trimmed'
     # version='ESC-10_v1_trimmed'
-    version='ESC-10_v1_10_11'
-    # version='ESC-10_v0'
+    # version='ESC-10_v1_10_11'
+    # version='ESC-10_layer.3.7.17_class.10.11'
+    version='ESC-10_v5'
+    # version='ESC-10_test'
     df = pd.read_csv('../data/ESC-10/meta/esc10.csv', sep=',').sort_values(by=['filename'])
     df = df[df['esc10']]
     df = df[['filename', 'target', 'category']]
-    df = df[(df['target'] == 10) | (df['target'] == 11)]
+    # df = df[(df['target'] == 10) | (df['target'] == 11)]
     # df = df[(df['target'] == 0) | (df['target'] == 21)]
     # df = df[(df['target'] == 40) | (df['target'] == 41)]
     df = df.reset_index(drop=True)
 
-    import pdb; pdb.set_trace()
-    dataset = AudioDataset.load_all_data("../data/ESC-10/audio", meta_df=df)
+    dataset = RawAudioDataset.load_all_data("../data/ESC-10/audio", meta_df=df)
 
     print('Dataset Size: ', len(dataset))
     # dataset = AudioDataset.load_all_data("../data/ESC-10/audio_40_41")
 
-    afs = construct_audio_affinity_matrices(dataset, layer_idx_list,
+    afs = construct_soundnet_affinity_matrices(dataset, layer_idx_list,
                                             num_prototypes=num_prototypes,
                                             cache=cache,
                                             version=version)
@@ -76,4 +78,4 @@ if __name__ == '__main__':
 
     import pdb; pdb.set_trace()
 
-    print("---End of test_vggish---")
+    print("---End of test_soundnet---")

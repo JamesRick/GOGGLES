@@ -1,3 +1,6 @@
 [submodule "torch_vggish"]
 	path = goggles/torch_vggish
 	url = https://github.com/JamesRick/audioset-vggish-tensorflow-to-pytorch
+[submodule "goggles/torch_soundnet"]
+	path = goggles/torch_soundnet
+	url = https://github.com/JamesRick/soundNet_pytorch
