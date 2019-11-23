@@ -1,15 +1,19 @@
 from collections import OrderedDict
 
 import numpy as np
+import librosa as lb
+
 import torch
 import torch.nn as nn
 from torchvision import models
 
 import goggles.torch_vggish.vggish as vggish
+import goggles.torch_vggish.audioset.vggish_input as vggish_input
 
 class VGGish_wrapper(nn.Module):
     def __init__(self, freeze=True):
         super(VGGish_wrapper, self).__init__()
+        self.name = 'VGGish'
         self._is_cuda = False
 
         # self.input_size = 224
@@ -99,7 +103,7 @@ class VGGish_wrapper(nn.Module):
         # image_size = self.input_size
 
         # batch_shape = (1, 3, image_size, image_size)
-        batch_shape = (1, 1, self.input_freq_size, self.input_frame_size) 
+        batch_shape = (1, 1, self.input_freq_size, self.input_frame_size)
 
 
         x = self._make_cuda(torch.autograd.Variable(
@@ -122,6 +126,10 @@ class VGGish_wrapper(nn.Module):
         self.freeze(is_originally_frozen)
 
         return (i_nw, j_nw), (rf_w, rf_h)
+
+    @classmethod
+    def preprocess(cls, wav_file):
+        return vggish_input.wavfile_to_examples(wav_file)
 
 
 if __name__ == '__main__':

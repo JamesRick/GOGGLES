@@ -1,81 +1,108 @@
-from goggles import construct_image_affinity_matrices, GogglesDataset,infer_labels
-from goggles.utils.dataset import RawAudioDataset
-from goggles.affinity_matrix_construction.construct import construct_soundnet_affinity_matrices
-import numpy as np
-import pandas as pd
+from goggles import construct_image_affinity_matrices, GogglesDataset, infer_labels
+from goggles.affinity_matrix_construction.construct import construct_audio_affinity_matrices
+from goggles.affinity_matrix_construction.audio_AF.pretrained_models.vggish_wrapper import VGGish_wrapper
+from goggles.affinity_matrix_construction.audio_AF.pretrained_models.soundnet_wrapper import Soundnet_wrapper
+from goggles.utils.dataset import AudioDataset
+
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import confusion_matrix
 
-import torchaudio.transforms as audio_transforms
-import soundfile as sf
-import shutil
 import os
+import shutil
+import numpy as np
+import pandas as pd
+import librosa as lb
+import argparse as ap
+import soundfile as sf
+import multiprocessing as mp
+import matplotlib.pyplot as plt
+import torchaudio.transforms as audio_transforms
 
-def to_relative_class(x, class_zero=37):
-    return x - class_zero
+def main(layer_idx_list=[3,7,17],
+         num_prototypes=10,
+         dev_set_size=5,
+         cache=False,
+         version='ESC-10',
+         random_targets=True):
 
-def to_binary(x, class_zero=40):
-    if x == class_zero:
-        return 0
-    else:
-        return 1
-
-if __name__ == '__main__':
-    # df = pd.read_csv('../data/ESC-50-master/meta/esc50.csv', sep=',').sort_values(by=['filename'])
-    # 37_40
-    num_cpus = int(os.cpu_count())
-    dev_set_size = 5
-    num_prototypes = 5
-    layer_idx_list = [3,7,17]
-    # layer_idx_list = [3, 7, 8, 11, 14, 17, 19, 21]
-    cache = True
-    # version='ESC-10_0_21_v1_trimmed'
-    # version='ESC-10_40_41_v1_trimmed'
-    # version='ESC-10_v1_trimmed'
-    # version='ESC-10_v1_10_11'
-    # version='ESC-10_layer.3.7.17_class.10.11'
-    version='ESC-10_v5'
-    # version='ESC-10_test'
+    # num_cpus = int(os.cpu_count())
+    np.random.seed(151)
+    model = Soundnet_wrapper()
     df = pd.read_csv('../data/ESC-10/meta/esc10.csv', sep=',').sort_values(by=['filename'])
     df = df[df['esc10']]
-    df = df[['filename', 'target', 'category']]
-    # df = df[(df['target'] == 10) | (df['target'] == 11)]
-    # df = df[(df['target'] == 0) | (df['target'] == 21)]
-    # df = df[(df['target'] == 40) | (df['target'] == 41)]
+    df = df[['filename', 'fold', 'target', 'category']]
+    if random_targets:
+        targets = np.random.choice(np.unique(df['target'].values), size=2, replace=False)
+    df = df[(df['target'] == targets[0]) | (df['target'] == targets[1])]
     df = df.reset_index(drop=True)
+    classes = np.unique(df['category'].values)
+    accuracies = []
+    cf_matrices = []
+    print("Running with classes: %s, %s" % (classes[0], classes[1]))
+    for i in np.unique(df['fold']):
+        cur_df = df[df['fold'] == i].reset_index(drop=True)
+        dataset = AudioDataset.load_all_data("../data/ESC-10/audio", model.preprocess, meta_df=cur_df)
+        afs = construct_audio_affinity_matrices(dataset, layer_idx_list, model,
+                                                    num_prototypes=num_prototypes,
+                                                    cache=cache,
+                                                    version=version)
+        print("")
+        print("Complete")
+        map_dict = dict(zip(np.unique(cur_df['target']).tolist(), np.arange(np.unique(cur_df['target']).size).tolist()))
 
-    dataset = RawAudioDataset.load_all_data("../data/ESC-10/audio", meta_df=df)
+        dev_set_indices = []
+        dev_set_labels = []
+        for unique_label in np.unique(cur_df['target']):
+            cur_target = np.random.choice(cur_df[cur_df['target'] == unique_label].index.values, size=5, replace=False)
+            print("For Class: ", map_dict[unique_label], "Using Indices: ", cur_target)
+            # cur_target = df[df['target'] == unique_label].index.values[:dev_set_size]
+            dev_set_indices.extend(cur_target.tolist())
+            dev_set_labels.extend(cur_df.iloc[cur_target]['target'].values.tolist())
 
-    print('Dataset Size: ', len(dataset))
-    # dataset = AudioDataset.load_all_data("../data/ESC-10/audio_40_41")
+        dev_set_labels = [map_dict[k] for k in dev_set_labels]
+        y_true = [map_dict[k] for k in cur_df['target'].values.tolist()]
+        prob = infer_labels(afs, dev_set_indices, dev_set_labels)
+        pred_labels = np.argmax(prob, axis=1).astype(int)
+        accuracy = accuracy_score(y_true, pred_labels)
+        cf_matrix = confusion_matrix(y_true, pred_labels)
+        accuracies.append(accuracy)
+        cf_matrices.append(cf_matrix)
+        print("Fold " + str(i) + " Accuracy: " + str(accuracy))
+        print("Confusion Matrix")
+        print(cf_matrix)
+    cf_matrices = np.array(cf_matrices)
+    row_sums = cf_matrices.sum(axis=2).reshape(-1,2,1)
+    cf_matrices_norm = cf_matrices / row_sums
+    print("Average Accuracy: " + str(np.array(accuracies).mean()))
 
-    afs = construct_soundnet_affinity_matrices(dataset, layer_idx_list,
-                                            num_prototypes=num_prototypes,
-                                            cache=cache,
-                                            version=version)
-    print("Complete")
-    map_dict = dict(zip(np.unique(df['target']).tolist(), np.arange(np.unique(df['target']).size).tolist()))
+    print("Average Confusion Matrix")
+    print(cf_matrices.mean(axis=0))
 
-    dev_set_indices = []
-    dev_set_labels = []
-    for unique_label in np.unique(df['target']):
-        cur_target = df[df['target'] == unique_label].index.values[:dev_set_size]
-        dev_set_indices.extend(cur_target.tolist())
-        dev_set_labels.extend(df.iloc[cur_target]['target'].values.tolist())
+    print("Average Confusion Matrix Norm")
+    print(cf_matrices_norm.mean(axis=0))
 
-    dev_set_labels = [map_dict[k] for k in dev_set_labels]
-    
-    # for filename in df['filename'].values.tolist():
-    #     shutil.copyfile(os.path.join('../data/ESC-10/audio', filename),
-    #         os.path.join('../data/ESC-10/audio_40_41', filename))
-
-    y_true = [map_dict[k] for k in df['target'].values.tolist()]
-    prob = infer_labels(afs, dev_set_indices, dev_set_labels)
-    pred_labels = np.argmax(prob, axis=1).astype(int)
-
-    print("accuracy", accuracy_score(y_true, pred_labels))
-    print(confusion_matrix(y_true, pred_labels))
-
-    import pdb; pdb.set_trace()
-
-    print("---End of test_soundnet---")
+if __name__ == '__main__':
+    parser = ap.ArgumentParser()
+    parser.add_argument('--layer_idx_list',
+                        type=int,
+                        nargs='+',
+                        default=[3,7,17],
+                        required=False)
+    parser.add_argument('--num_prototypes',
+                        type=int,
+                        default=10,
+                        required=False)
+    parser.add_argument('--dev_set_size',
+                        type=int,
+                        default=5,
+                        required=False)
+    parser.add_argument('--cache',
+                        type=bool,
+                        default=False,
+                        required=False)
+    parser.add_argument('--version',
+                        type=str,
+                        default='v0',
+                        required=False)
+    args = parser.parse_args()
+    main(**args.__dict__)

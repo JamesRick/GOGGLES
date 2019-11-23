@@ -1,6 +1,8 @@
 from collections import OrderedDict
 
 import numpy as np
+import librosa as lb
+
 import torch
 import torch.nn as nn
 from torchvision import models
@@ -10,6 +12,7 @@ import goggles.torch_soundnet.soundnet as soundnet
 class Soundnet_wrapper(nn.Module):
     def __init__(self, freeze=True):
         super(Soundnet_wrapper, self).__init__()
+        self.name = 'SoundNet'
         self._is_cuda = False
 
         # self.input_size = 224
@@ -122,6 +125,16 @@ class Soundnet_wrapper(nn.Module):
         self.freeze(is_originally_frozen)
 
         return (i_nw, j_nw), (rf_w, rf_h)
+
+    @classmethod
+    def preprocess(cls, wav_file):
+        length = 22050 * 20
+        wav_data, sr = lb.load(wav_file)
+        wav_data = np.concatenate((wav_data, np.zeros(length - wav_data.shape[0])))
+        # wav_data = np.tile(wav_data, int(length / wav_data.shape[0] + 1))
+        wav_data = wav_data[:length]
+        wav_data = wav_data.reshape(1, -1, 1)
+        return wav_data, None
 
 
 if __name__ == '__main__':
