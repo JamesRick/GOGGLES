@@ -16,7 +16,11 @@ import argparse as ap
 import soundfile as sf
 import multiprocessing as mp
 import matplotlib.pyplot as plt
-import torchaudio.transforms as audio_transforms
+try:
+    import torchaudio.transforms as audio_transforms
+except:
+    Print("Unable to import torchaudio.transforms.")
+    print("Continuing without torchaudio packages.")
 
 def main(layer_idx_list=[2,5,10,15],
          num_prototypes=10,
