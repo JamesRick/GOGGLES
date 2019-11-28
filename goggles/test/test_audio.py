@@ -8,6 +8,7 @@ from sklearn.metrics import accuracy_score
 from sklearn.metrics import confusion_matrix
 
 import os
+import torch
 import shutil
 
 import numpy as np
@@ -26,10 +27,13 @@ def main(layer_idx_list=[3,7,17],
          cache=False,
          dataset_name='ESC-10',
          version='ESC-10',
+         seed=151,
          random_targets=True):
 
+    np.random.seed(seed)
     goggles_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     print("Model: " + model_name)
+    print("Using cuda: " + str(torch.cuda.is_available()))
     if model_name == 'vggish':
         model = VGGish_wrapper()
         if max(layer_idx_list) >= len(model._features):
@@ -51,6 +55,21 @@ def main(layer_idx_list=[3,7,17],
     if dataset_name == 'ESC-10':
         dataset_csv = os.path.join(goggles_dir, 'data', dataset_name, 'meta/esc10.csv')
         dataset_audio = os.path.join(goggles_dir, 'data', dataset_name, 'audio')
+        df = pd.read_csv(dataset_csv, sep=',')
+        df = df.sort_values(by=['filename'])
+        df = df[df['esc10']]
+        df = df[['filename', 'fold', 'target', 'category']]
+    elif dataset_name == 'ESC-50':
+        pass
+    elif dataset_name == 'UrbanSound8K':
+        dataset_csv = os.path.join(goggles_dir, 'data', dataset_name, 'metadata/esc10.csv')
+        dataset_audio = os.path.join(goggles_dir, 'data', dataset_name, 'audio')
+
+        df = pd.read_csv('../data/UrbanSound8K/meta/UrbanSound8K.csv', sep=',')
+    elif dataset_name == 'Litis_Rounen':
+        pass
+    elif dataset_name == 'Vox':
+        pass
     else:
         raise Exception("Dataset " + dataset_name + " not found.\n\
                         Currently implemented datasets are:\n\
@@ -58,10 +77,9 @@ def main(layer_idx_list=[3,7,17],
                         #2.\t\n")
 
     # num_cpus = int(os.cpu_count())
-    np.random.seed(151)
-    df = pd.read_csv(dataset_csv, sep=',').sort_values(by=['filename'])
-    df = df[df['esc10']]
-    df = df[['filename', 'fold', 'target', 'category']]
+
+
+
     if random_targets:
         targets = np.random.choice(np.unique(df['target'].values), size=2, replace=False)
     df = df[(df['target'] == targets[0]) | (df['target'] == targets[1])]
@@ -76,7 +94,9 @@ def main(layer_idx_list=[3,7,17],
         afs = construct_audio_affinity_matrices(dataset, layer_idx_list, model,
                                                     num_prototypes=num_prototypes,
                                                     cache=cache,
-                                                    version=version)
+                                                    version=version,
+                                                    seed=str(seed),
+                                                    fold=str(i))
         print("")
         print("Complete")
         map_dict = dict(zip(np.unique(cur_df['target']).tolist(), np.arange(np.unique(cur_df['target']).size).tolist()))
@@ -84,7 +104,7 @@ def main(layer_idx_list=[3,7,17],
         dev_set_indices = []
         dev_set_labels = []
         for unique_label in np.unique(cur_df['target']):
-            cur_target = np.random.choice(cur_df[cur_df['target'] == unique_label].index.values, size=5, replace=False)
+            cur_target = np.random.choice(cur_df[cur_df['target'] == unique_label].index.values, size=dev_set_size, replace=False)
             print("For Class: ", map_dict[unique_label], "Using Indices: ", cur_target)
             # cur_target = df[df['target'] == unique_label].index.values[:dev_set_size]
             dev_set_indices.extend(cur_target.tolist())
@@ -114,19 +134,22 @@ def main(layer_idx_list=[3,7,17],
 
     output_dict = {
                    'accuracy': accuracy.mean(),
+                   'dataset_name': dataset_name,
+                   'model_name': model_name,
                    'layer_idx_list': layer_idx_list,
                    'num_prototypes': num_prototypes,
                    'dev_set_size': dev_set_size,
-                   'version': version
+                   'version': version,
+                   'seed': seed
                   }
 
     output_dir = os.path.join(goggles_dir, 'output')
-    run_output_dir = os.path.join(output_dir, str(dataset_name), str(model_name), str(version), str(num_prototypes) + '_' + str(dev_set_size))
+    run_output_dir = os.path.join(output_dir, str(dataset_name), str(model_name), str(version), 'd' + str(dev_set_size) + '_k' + str(num_prototypes), 'seed_' + str(seed))
     os.makedirs(run_output_dir, exist_ok=True)
-    with open(os.path.join(run_output_dir, 'output_dict.pkl')) as out_fle:
+    with open(os.path.join(run_output_dir, 'output_dict.pkl'), 'wb') as out_fle:
         pkl.dump(output_dict, out_fle)
 
-    print("---End of test_soundnet---")
+    print("---End of test_audio---")
 
 if __name__ == '__main__':
     parser = ap.ArgumentParser()
@@ -154,6 +177,10 @@ if __name__ == '__main__':
     parser.add_argument('--dataset_name',
                         type=str,
                         default='ESC-10',
+                        required=False)
+    parser.add_argument('--seed',
+                        type=int,
+                        default=151,
                         required=False)
     parser.add_argument('--version',
                         type=str,

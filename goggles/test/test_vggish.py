@@ -9,24 +9,56 @@ from sklearn.metrics import confusion_matrix
 
 import os
 import shutil
+
 import numpy as np
 import pandas as pd
+import pickle as pkl
 import librosa as lb
 import argparse as ap
 import soundfile as sf
 import multiprocessing as mp
 import matplotlib.pyplot as plt
 
-def main(layer_idx_list=[2,5,10,15],
+def main(layer_idx_list=[3,7,17],
          num_prototypes=10,
          dev_set_size=5,
+         model_name='vggish',
          cache=False,
+         dataset_name='ESC-10',
          version='ESC-10',
          random_targets=True):
 
+    goggles_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    print("Model: " + model_name)
+    if model_name == 'vggish':
+        model = VGGish_wrapper()
+        if max(layer_idx_list) >= len(model._features):
+            print("Invalid layer_idx_list: " + str(layer_idx_list))
+            layer_idx_list = [2, 5, 10, 15]
+            print("Defaulting to layer_idx_list = " + str(layer_idx_list))
+    elif model_name == 'soundnet':
+        model = Soundnet_wrapper()
+        if max(layer_idx_list) >= len(model._features):
+            print("Invalid layer_idx_list: " + str(layer_idx_list))
+            layer_idx_list = [3, 7, 17]
+            print("Defaulting to layer_idx_list = " + str(layer_idx_list))
+    else:
+        raise Exception("Model " + model_name + " not found.\n\
+                        Currently implemented models are:\n\
+                        1.\tvggish\n\
+                        2.\tsoundnet\n")
+
+    if dataset_name == 'ESC-10':
+        dataset_csv = os.path.join(goggles_dir, 'data', dataset_name, 'meta/esc10.csv')
+        dataset_audio = os.path.join(goggles_dir, 'data', dataset_name, 'audio')
+    else:
+        raise Exception("Dataset " + dataset_name + " not found.\n\
+                        Currently implemented datasets are:\n\
+                        1.\tESC-10\n")
+                        #2.\t\n")
+
     # num_cpus = int(os.cpu_count())
     np.random.seed(151)
-    model = VGGish_wrapper()
     df = pd.read_csv('../data/ESC-10/meta/esc10.csv', sep=',').sort_values(by=['filename'])
     df = df[df['esc10']]
     df = df[['filename', 'fold', 'target', 'category']]
@@ -70,15 +102,31 @@ def main(layer_idx_list=[2,5,10,15],
         print("Confusion Matrix")
         print(cf_matrix)
     cf_matrices = np.array(cf_matrices)
+    accuracies = np.array(accuracies)
     row_sums = cf_matrices.sum(axis=2).reshape(-1,2,1)
     cf_matrices_norm = cf_matrices / row_sums
-    print("Average Accuracy: " + str(np.array(accuracies).mean()))
+    print("Average Accuracy: " + str(accuracies.mean()))
 
     print("Average Confusion Matrix")
     print(cf_matrices.mean(axis=0))
 
     print("Average Confusion Matrix Norm")
     print(cf_matrices_norm.mean(axis=0))
+
+    output_dict = {
+                   'accuracy': accuracy.mean(),
+                   'layer_idx_list': layer_idx_list,
+                   'num_prototypes': num_prototypes,
+                   'dev_set_size': dev_set_size,
+                   'version': version
+                  }
+
+    output_dir = os.path.join(goggles_dir, 'output')
+    run_output_dir = os.path.join(output_dir, str(dataset_name), str(model_name), str(version), str(num_prototypes) + '_' + str(dev_set_size))
+    os.makedirs(run_output_dir, exist_ok=True)
+    with open(os.path.join(run_output_dir, 'output_dict.pkl')) as out_fle:
+        pkl.dump(output_dict, out_fle)
+
 
     print("---End of test_vggish---")
 
@@ -87,7 +135,7 @@ if __name__ == '__main__':
     parser.add_argument('--layer_idx_list',
                         type=int,
                         nargs='+',
-                        default=[2,5,10,15],
+                        default=[3,7,17],
                         required=False)
     parser.add_argument('--num_prototypes',
                         type=int,
@@ -97,13 +145,26 @@ if __name__ == '__main__':
                         type=int,
                         default=5,
                         required=False)
+    parser.add_argument('--model_name',
+                        type=str,
+                        default='vggish',
+                        required=False)
     parser.add_argument('--cache',
                         type=bool,
                         default=False,
+                        required=False)
+    parser.add_argument('--dataset_name',
+                        type=str,
+                        default='ESC-10',
                         required=False)
     parser.add_argument('--version',
                         type=str,
                         default='v0',
                         required=False)
+    parser.add_argument('--random_targets',
+                        type=bool,
+                        default=True,
+                        required=False)
+
     args = parser.parse_args()
     main(**args.__dict__)
