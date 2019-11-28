@@ -56,16 +56,24 @@ def main(layer_idx_list=[3,7,17],
         dataset_csv = os.path.join(goggles_dir, 'data', dataset_name, 'meta/esc10.csv')
         dataset_audio = os.path.join(goggles_dir, 'data', dataset_name, 'audio')
         df = pd.read_csv(dataset_csv, sep=',')
-        df = df.sort_values(by=['filename'])
         df = df[df['esc10']]
         df = df[['filename', 'fold', 'target', 'category']]
+        df = df.sort_values(by=['filename'])
     elif dataset_name == 'ESC-50':
-        pass
+        dataset_csv = os.path.join(goggles_dir, 'data', dataset_name, 'meta/esc50.csv')
+        dataset_audio = os.path.join(goggles_dir, 'data', dataset_name, 'audio')
+        df = pd.read_csv(dataset_csv, sep=',')
+        df = df[['filename', 'fold', 'target', 'category']]
+        df = df.sort_values(by=['filename'])
     elif dataset_name == 'UrbanSound8K':
         dataset_csv = os.path.join(goggles_dir, 'data', dataset_name, 'metadata/esc10.csv')
         dataset_audio = os.path.join(goggles_dir, 'data', dataset_name, 'audio')
+        df = pd.read_csv(dataset_csv, sep=',')
+        df = df[['slice_file_name', 'fold', 'classID', 'class']]
+        df.columns = ['filename', 'fold', 'target', 'category']
+        df = df.sort_values(by=['filename'])
 
-        df = pd.read_csv('../data/UrbanSound8K/meta/UrbanSound8K.csv', sep=',')
+        # df = pd.read_csv('../data/UrbanSound8K/meta/UrbanSound8K.csv', sep=',')
     elif dataset_name == 'Litis_Rounen':
         pass
     elif dataset_name == 'Vox':
@@ -73,13 +81,12 @@ def main(layer_idx_list=[3,7,17],
     else:
         raise Exception("Dataset " + dataset_name + " not found.\n\
                         Currently implemented datasets are:\n\
-                        1.\tESC-10\n")
+                        1.\tESC-10\n\
+                        2.\tESC-50\n\
+                        3.\tUrbanSound8K\n")
                         #2.\t\n")
 
     # num_cpus = int(os.cpu_count())
-
-
-
     if random_targets:
         targets = np.random.choice(np.unique(df['target'].values), size=2, replace=False)
     df = df[(df['target'] == targets[0]) | (df['target'] == targets[1])]
