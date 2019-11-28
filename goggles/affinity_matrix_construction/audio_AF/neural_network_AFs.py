@@ -145,7 +145,7 @@ def _get_score_matrix_for_audio(audio_idx, num_max_proposals, context):
     return np.array(score_matrix), column_ids
 
 
-def audio_nn_AFs(dataset, layer_idx, model, num_max_proposals=10, cache=False, version='v0'):
+def audio_nn_AFs(dataset, layer_idx, model, num_max_proposals=10, cache=False, version='v0', seed='151', fold='0'):
     """
     Computes the affinity scores between every instance in the dataset using the
     layer_idx as the layer to gather the top-k prototypes from.
@@ -165,6 +165,8 @@ def audio_nn_AFs(dataset, layer_idx, model, num_max_proposals=10, cache=False, v
     # affinity_matrix_list = [np.zeros((len(dataset),) * 2) for _ in range(num_max_proposals)]
     out_filename = '.'.join([
     version,
+    seed,
+    fold,
     model.name + f'_wrapper_layer{layer_idx:02d}',
     f'k{num_max_proposals:02d}',
     'scores.npz'])

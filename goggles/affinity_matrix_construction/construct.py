@@ -18,14 +18,16 @@ def construct_audio_affinity_matrices(dataset,
                                       model,
                                       num_prototypes=10,
                                       cache=True,
-                                      version='v0'):
+                                      version='v0',
+                                      seed='151',
+                                      fold='0'):
     """
     :param GogglesDataset instance
     :return: a list of affinity matrices
     """
     matrix_list = []
     for layer_idx in layer_idx_list: # all max pooling layers
-        matrix_list.extend(audio_nn_AFs(dataset, layer_idx, model, num_prototypes, cache, version=version))
+        matrix_list.extend(audio_nn_AFs(dataset, layer_idx, model, num_prototypes, cache, version=version, seed=seed, fold=fold))
     return matrix_list
 
 # def construct_soundnet_affinity_matrices(dataset, layer_idx_list, num_prototypes=10, cache=True, version='v0'):
