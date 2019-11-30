@@ -35,6 +35,10 @@ def main():
 
     output_dict = {
                    'accuracy': [],
+                   'balanced_accuracy': [],
+                   'precision': [],
+                   'recall': [],
+                   'f1': [],
                    'dataset_name': [],
                    'model_name': [],
                    'layer_idx_list': [],
@@ -58,9 +62,11 @@ def main():
                         with open(output_pkl_file, 'rb') as inp_fle:
                             pkl_dict = pkl.load(inp_fle)
 
-                        for key in pkl_dict.keys():
-                            output_dict[key].append(pkl_dict[key])
+                        if pkl_dict['dev_set_size'] == 5:
+                            for key in pkl_dict.keys():
+                                output_dict[key].append(pkl_dict[key])
 
+    import pdb; pdb.set_trace()
     df = pd.DataFrame(output_dict)
     results_dir = os.path.join(goggles_dir, 'results')
     os.makedirs(results_dir, exist_ok=True)
@@ -68,15 +74,56 @@ def main():
 
     # new_df = pd.DataFrame(columns=["accuracy", "dataset_name", "model_name", "layer_idx_list",  "num_prototypes",  "dev_set_size"])
     df_group = df.groupby(["dataset_name", "model_name", "num_prototypes", "dev_set_size"])
-    new_df = pd.DataFrame({'accuracy' : df_group['accuracy'].mean()}).reset_index()
+    accuracy_df = pd.DataFrame({'accuracy' : df_group['accuracy'].mean()}).reset_index()
+    balanced_df = pd.DataFrame({'balanced_accuracy' : df_group['balanced_accuracy'].mean()}).reset_index()
+    precision_df = pd.DataFrame({'precision' : df_group['precision'].mean()}).reset_index()
+    recall_df = pd.DataFrame({'recall' : df_group['recall'].mean()}).reset_index()
+    f1_df = pd.DataFrame({'f1' : df_group['f1'].mean()}).reset_index()
 
-    us_df = new_df[(new_df['dataset_name'] == 'UrbanSound8K') & (new_df['model_name'] == 'soundnet') & (new_df['dev_set_size'] == 5)]
+    urban_soundnet_5a = accuracy_df[(accuracy_df['dataset_name'] == 'UrbanSound8K') & (accuracy_df['model_name'] == 'soundnet') & (accuracy_df['dev_set_size'] == 5)].copy()
+    urban_vggish_5a = accuracy_df[(accuracy_df['dataset_name'] == 'UrbanSound8K') & (accuracy_df['model_name'] == 'vggish') & (accuracy_df['dev_set_size'] == 5)].copy()
+
+    urban_soundnet_5b = balanced_df[(balanced_df['dataset_name'] == 'UrbanSound8K') & (balanced_df['model_name'] == 'soundnet') & (balanced_df['dev_set_size'] == 5)].copy()
+    urban_vggish_5b = balanced_df[(balanced_df['dataset_name'] == 'UrbanSound8K') & (balanced_df['model_name'] == 'vggish') & (balanced_df['dev_set_size'] == 5)].copy()
+
+    urban_soundnet_5p = precision_df[(precision_df['dataset_name'] == 'UrbanSound8K') & (precision_df['model_name'] == 'soundnet') & (precision_df['dev_set_size'] == 5)].copy()
+    urban_vggish_5p = precision_df[(precision_df['dataset_name'] == 'UrbanSound8K') & (precision_df['model_name'] == 'vggish') & (precision_df['dev_set_size'] == 5)].copy()
+
+    urban_soundnet_5r = recall_df[(recall_df['dataset_name'] == 'UrbanSound8K') & (recall_df['model_name'] == 'soundnet') & (recall_df['dev_set_size'] == 5)].copy()
+    urban_vggish_5r = recall_df[(recall_df['dataset_name'] == 'UrbanSound8K') & (recall_df['model_name'] == 'vggish') & (recall_df['dev_set_size'] == 5)].copy()
+
+    urban_soundnet_5f = f1_df[(f1_df['dataset_name'] == 'UrbanSound8K') & (f1_df['model_name'] == 'soundnet') & (f1_df['dev_set_size'] == 5)].copy()
+    urban_vggish_5f = f1_df[(f1_df['dataset_name'] == 'UrbanSound8K') & (f1_df['model_name'] == 'vggish') & (f1_df['dev_set_size'] == 5)].copy()
+
     import pdb; pdb.set_trace()
-    plt.plot(new_df[(new_df['dataset_name'] == 'UrbanSound8K') & (new_df['model_name'] == 'vggish') & (new_df['dev_set_size'] == 5)]['accuracy'].values); plt.ylim(ymin=0.0, ymax=1.0); plt.show()
-    plt.plot(new_df[(new_df['dataset_name'] == 'UrbanSound8K') & (new_df['model_name'] == 'vggish') & (new_df['num_prototypes'] == 5)]['accuracy'].values); plt.ylim(ymin=0.0, ymax=1.0); plt.show()
-    plt.plot(us_df['num_prototypes'].values.flatten(), us_df['accuracy'].values.flatten())
-    # plt.savefig('pic.png')
+    urban_soundnet_5a['num_afs'] = (urban_soundnet_5a.loc[:, 'num_prototypes'] * 3)
+    urban_vggish_5a['num_afs'] = urban_vggish_5a.loc[:, 'num_prototypes'] * 4
+
+    urban_soundnet_5b['num_afs'] = urban_soundnet_5b.loc[:, 'num_prototypes'] * 3
+    urban_vggish_5b['num_afs'] = urban_vggish_5b.loc[:, 'num_prototypes'] * 4
+
+    urban_soundnet_5p['num_afs'] = urban_soundnet_5p.loc[:, 'num_prototypes'] * 3
+    urban_vggish_5p['num_afs'] = urban_vggish_5p.loc[:, 'num_prototypes'] * 4
+
+    urban_soundnet_5r['num_afs'] = urban_soundnet_5r.loc[:, 'num_prototypes'] * 3
+    urban_vggish_5r['num_afs'] = urban_vggish_5r.loc[:, 'num_prototypes'] * 4
+
+    urban_soundnet_5f['num_afs'] = urban_soundnet_5f.loc[:, 'num_prototypes'] * 3
+    urban_vggish_5f['num_afs'] = urban_vggish_5f.loc[:, 'num_prototypes'] * 4
+
+    fx, fy = urban_vggish_5f['num_afs'].values, urban_vggish_5f['f1'].values
+    bx, by = urban_vggish_5b['num_afs'].values, urban_vggish_5b['balanced_accuracy'].values
+    plt.figure()
+    plt.scatter(fx, fy, marker='x', c='b'); plt.plot(fx, fy); plt.ylim(ymin=0.5, ymax=1.0)
+    plt.scatter(bx, by, marker='x', c='r'); plt.plot(bx, by); plt.ylim(ymin=0.5, ymax=1.0)
     plt.show()
+
+    import pdb; pdb.set_trace()
+    # plt.plot(balanced_df[(balanced_df['dataset_name'] == 'UrbanSound8K') & (balanced_df['model_name'] == 'vggish') & (balanced_df['dev_set_size'] == 5)]['balanced_accuracy'].values); plt.ylim(ymin=0.0, ymax=1.0); plt.show()
+    # plt.plot(balanced_df[(balanced_df['dataset_name'] == 'UrbanSound8K') & (balanced_df['model_name'] == 'vggish') & (balanced_df['num_prototypes'] == 5)]['balanced_accuracy'].values); plt.ylim(ymin=0.0, ymax=1.0); plt.show()
+    # plt.plot(us_df['num_prototypes'].values.flatten(), us_df['balanced_accuracy'].values.flatten())
+    # plt.savefig('pic.png')
+    # plt.show()
     # for dev_i in [5]:
     #     for num_proto_i in np.arange(1, 11):
     #         for model_i in ['soundnet', 'vggish']:
