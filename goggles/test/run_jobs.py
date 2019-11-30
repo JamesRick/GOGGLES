@@ -17,14 +17,17 @@ import matplotlib.pyplot as plt
 #SBATCH --ntasks=1
 #SBATCH --mem-per-cpu=2G
 def write_slurm_script(layer_idx_lists, model_names, num_prototypes, dev_set_sizes, cache, dataset_names):
+    j = 0
     for dataset_name in dataset_names:
         for layer_idx_list, model_name in zip(layer_idx_lists, model_names):
             for dev_set_size in dev_set_sizes:
+                if j % 10 == 0:
+                    time.sleep(20.0)
                 for num_prototype in num_prototypes:
                     for i in range(1, 21):
                         job_name = 'goggles' + '_' + str(i)
                         pid_string = str(os.getpid())
-                        version = dataset_name + '_v0'
+                        version = 'v0'
                         # slurm_filename = 'slurmSubmit' + pid_string + '.sh'
                         slurm_filename = 'slurmSubmit_'\
                         + str(dataset_name) + '_'\
@@ -67,21 +70,28 @@ def write_slurm_script(layer_idx_lists, model_names, num_prototypes, dev_set_siz
                             slurmFile.write('#SBATCH --output=' + slurm_output_filename + '.out\n')
                             slurmFile.write('#SBATCH -N 1\n')
                             slurmFile.write('#SBATCH -c 1\n')
+                            slurmFile.write('#SBATCH -t 7-12:00')
+                            slurmFile.write('#SBATCH --gres=gpu:0')
                             # slurmFile.write('#SBATCH --ntasks=1\n')
-                            slurmFile.write('#SBATCH --mem-per-cpu=2G\n')
+                            slurmFile.write('#SBATCH --mem-per-cpu=4G\n')
                             slurmFile.write('#\n')
                             slurmFile.write(python_command)
 
-                        time.sleep(2.5)
+                        time.sleep(0.1)
                         sp.call(['sbatch', slurm_submit_filename])
+                    j += 1
+                    print(j, "/", 1000)
 
 
 def main():
-    dataset_names = ['ESC-10']
-    layer_idx_lists = [[2, 5, 10, 15], [3,7,17]]
+    dataset_names = ['UrbanSound8K', 'ESC-10', 'LITIS']
+    layer_idx_lists = [[2, 5, 10, 15], [3, 7, 17]]
     model_names = ['vggish', 'soundnet']
-    num_prototypes = np.arange(1, 11)
+    # num_prototypes = np.arange(1, 11)
+    # num_prototypes = np.arange(11, 51)
+    num_prototypes = np.arange(1, 17)
     # dev_set_sizes = [1, 2, 3, 4, 5, 10, 15, 20]
+    # dev_set_sizes = np.arange(1,51)
     dev_set_sizes = [5]
     cache = True
 

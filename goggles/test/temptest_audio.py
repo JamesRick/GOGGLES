@@ -4,11 +4,17 @@ from goggles.affinity_matrix_construction.audio_AF.pretrained_models.vggish_wrap
 from goggles.affinity_matrix_construction.audio_AF.pretrained_models.soundnet_wrapper import Soundnet_wrapper
 from goggles.utils.dataset import AudioDataset
 
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix, balanced_accuracy_score
+from sklearn import svm
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import confusion_matrix
 
 import os
+import sys
+import time
+import tqdm
 import torch
 import shutil
+import datetime
 
 import numpy as np
 import pandas as pd
@@ -30,9 +36,17 @@ def main(layer_idx_list=[3,7,17],
          random_targets=True):
 
     np.random.seed(seed)
+    cur_time = datetime.datetime.now()
+    print("\n\nStart Time:", cur_time)
+    print("\n")
+    sys.stdout.flush()
+
+    start_time = time.time()
     goggles_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     print("Model: " + model_name)
     print("Using cuda: " + str(torch.cuda.is_available()))
+    sys.stdout.flush()
+
     if model_name == 'vggish':
         model = VGGish_wrapper()
         if max(layer_idx_list) >= len(model._features):
@@ -46,10 +60,12 @@ def main(layer_idx_list=[3,7,17],
             layer_idx_list = [3, 7, 17]
             print("Defaulting to layer_idx_list = " + str(layer_idx_list))
     else:
+        sys.stdout.flush()
         raise Exception("Model " + model_name + " not found.\n\
                         Currently implemented models are:\n\
                         1.\tvggish\n\
                         2.\tsoundnet\n")
+    sys.stdout.flush()
 
     if dataset_name == 'ESC-10':
         dataset_csv = os.path.join(goggles_dir, 'data', dataset_name, 'meta/esc10.csv')
@@ -78,29 +94,19 @@ def main(layer_idx_list=[3,7,17],
         # import pdb; pdb.set_trace()
 
         # df = pd.read_csv('../data/UrbanSound8K/meta/UrbanSound8K.csv', sep=',')
-    elif dataset_name == 'LITIS':
-        dataset_csv = os.path.join(goggles_dir, 'data', dataset_name, 'relation_wav_examples.txt')
-        dataset_audio = os.path.join(goggles_dir, 'data', dataset_name, 'data_rouen')
-        df = pd.read_csv(dataset_csv, sep=' ', header=None)
-        df.columns=['filename','fileindex']
-        df['category'] = df['filename'].str.extract('^([^\d]*).*')
-        df['target'] = (df.groupby(['category']).cumcount()==0).astype(int)
-        df['target'] = df['target'].cumsum()
-        df['fold'] = 1
-        df = df[['filename', 'fold', 'target', 'category']]
-        df['filename'] = df['filename'].str.replace('\t', '')
-        # df = pd.read_csv('../data/LITIS/relation_wav_examples.txt', sep=" ", header=None)
+    elif dataset_name == 'Litis_Rounen':
+        pass
     elif dataset_name == 'Vox':
         pass
     else:
+        sys.stdout.flush()
         raise Exception("Dataset " + dataset_name + " not found.\n\
                         Currently implemented datasets are:\n\
                         1.\tESC-10\n\
                         2.\tESC-50\n\
-                        3.\tUrbanSound8K\n\
-                        4.\tLITIS\n\
-                        5.\tVox\n\
-                        6.\tTUT-UrbanAcousticScenes\n")
+                        3.\tUrbanSound8K\n")
+                        #2.\t\n")
+    sys.stdout.flush()
 
     # num_cpus = int(os.cpu_count())
     if random_targets:
@@ -108,65 +114,98 @@ def main(layer_idx_list=[3,7,17],
     df = df[(df['target'] == targets[0]) | (df['target'] == targets[1])]
     df = df.reset_index(drop=True)
     classes = np.unique(df['category'].values)
-    balanced_accuracies = []
     accuracies = []
-    precisions = []
-    recalls = []
-    f1s = []
     cf_matrices = []
     print("Running with classes: %s, %s" % (classes[0], classes[1]))
+    sys.stdout.flush()
+
     for i in np.unique(df['fold']):
         cur_df = df[df['fold'] == i].reset_index(drop=True)
-        if dataset_name == 'ESC-10' or dataset_name == 'ESC-50' or dataset_name == 'LITIS':
+
+        if dataset_name == 'ESC-10' or dataset_name == 'ESC-50':
             dataset = AudioDataset.load_all_data(dataset_audio, model.preprocess, name=dataset_name, meta_df=cur_df)
         elif dataset_name == 'UrbanSound8K':
             dataset = AudioDataset.load_all_data(os.path.join(dataset_audio, 'fold' + str(i)), model.preprocess, name=dataset_name, meta_df=cur_df)
 
-        afs = construct_audio_affinity_matrices(dataset, layer_idx_list, model,
-                                                    num_prototypes=num_prototypes,
-                                                    cache=cache,
-                                                    version=version,
-                                                    seed=str(seed),
-                                                    fold=str(i))
+        # afs = construct_audio_affinity_matrices(dataset, layer_idx_list, model,
+        #                                             num_prototypes=num_prototypes,
+        #                                             cache=cache,
+        #                                             version=version,
+        #                                             seed=str(seed),
+        #                                             fold=str(i))
         print("")
         print("Complete")
-        map_dict = dict(zip(np.unique(cur_df['target']).tolist(), np.arange(np.unique(cur_df['target']).size).tolist()))
+        sys.stdout.flush()
 
+        X = []
+        y = []
+        for j in tqdm.tqdm(range(len(dataset))):
+            wav_data, sr = lb.load(dataset_audio + '/fold' + str(i) + '/' + dataset.audio_filename_list[j], mono=True)
+            min_length = sr * 4
+            max_length = sr * 20
+            if wav_data.shape[0] < min_length:
+                wav_data = np.concatenate((wav_data, np.zeros(min_length - wav_data.shape[0])))
+            wav_data = wav_data[:max_length]
+            wav_data = wav_data.reshape(1, -1, 1)
+            # X.append(model.get_svm_data(dataset[i], layer_idx=17))
+            X.append(model.get_svm_data((wav_data,), layer_idx=17))
+            y.append(cur_df['target'].loc[j])
+            # if X[j].shape[1] != 2816:
+            #     print(j, X[j].shape[1])
+            #     print(wav_data.shape)
+            #     import pdb; pdb.set_trace()
+        X = np.array(X).squeeze()
+        y = np.array(y)
+
+        # Setting up the development set for cluster to class assignment
+        map_dict = dict(zip(np.unique(cur_df['target']).tolist(), np.arange(np.unique(cur_df['target']).size).tolist()))
         dev_set_indices = []
         dev_set_labels = []
         for unique_label in np.unique(cur_df['target']):
             cur_target = np.random.choice(cur_df[cur_df['target'] == unique_label].index.values, size=dev_set_size, replace=False)
             print("For Class: ", map_dict[unique_label], "Using Indices: ", cur_target)
+            sys.stdout.flush()
             # cur_target = df[df['target'] == unique_label].index.values[:dev_set_size]
             dev_set_indices.extend(cur_target.tolist())
             dev_set_labels.extend(cur_df.iloc[cur_target]['target'].values.tolist())
-
         dev_set_labels = [map_dict[k] for k in dev_set_labels]
         y_true = [map_dict[k] for k in cur_df['target'].values.tolist()]
-        prob = infer_labels(afs, dev_set_indices, dev_set_labels)
-        pred_labels = np.argmax(prob, axis=1).astype(int)
-        balanced_accuracy = balanced_accuracy_score(y_true, pred_labels)
-        accuracy = accuracy_score(y_true, pred_labels)
-        precision = precision_score(y_true, pred_labels, average='weighted')
-        recall = recall_score(y_true, pred_labels, average='weighted')
-        f1 = f1_score(y_true, pred_labels, average='weighted')
-        cf_matrix = confusion_matrix(y_true, pred_labels)
-        balanced_accuracies.append(balanced_accuracy)
-        accuracies.append(accuracy)
-        precisions.append(precision)
-        recalls.append(recall)
-        f1s.append(f1)
-        cf_matrices.append(cf_matrix)
 
+        # import pdb; pdb.set_trace()
+        y = np.array([map_dict[k] for k in y])
+        X_train, y_train = X[dev_set_indices, :], y[dev_set_indices]
+        svm_clf = svm.SVC(kernel='linear')
+        svm_model = svm_clf.fit(X_train, y_train)
+        y_pred = svm_model.predict(X)
+
+        # import pdb; pdb.set_trace()
+
+        accuracy = accuracy_score(y_true, y_pred)
+        cf_matrix = confusion_matrix(y_true, y_pred)
+        accuracies.append(accuracy)
+        cf_matrices.append(cf_matrix)
         print("Fold " + str(i) + " Accuracy: " + str(accuracy))
-        print("Fold " + str(i) + " Balanced Accuracy: " + str(balanced_accuracy))
         print("Confusion Matrix")
         print(cf_matrix)
+        sys.stdout.flush()
+
+        # import pdb; pdb.set_trace()
+
+        # prob = infer_labels(afs, dev_set_indices, dev_set_labels)
+        # pred_labels = np.argmax(prob, axis=1).astype(int)
+        # accuracy = accuracy_score(y_true, pred_labels)
+        # cf_matrix = confusion_matrix(y_true, pred_labels)
+        # accuracies.append(accuracy)
+        # cf_matrices.append(cf_matrix)
+        # print("Fold " + str(i) + " Accuracy: " + str(accuracy))
+        # print("Confusion Matrix")
+        # print(cf_matrix)
+        # sys.stdout.flush()
+
     cf_matrices = np.array(cf_matrices)
     row_sums = cf_matrices.sum(axis=2).reshape(-1,2,1)
     cf_matrices_norm = cf_matrices / row_sums
     print("Average Accuracy: " + str(np.array(accuracies).mean()))
-    print("Average Balanced Accuracy: " + str(np.array(balanced_accuracies).mean()))
 
     print("Average Confusion Matrix")
     print(cf_matrices.mean(axis=0))
@@ -174,26 +213,27 @@ def main(layer_idx_list=[3,7,17],
     print("Average Confusion Matrix Norm")
     print(cf_matrices_norm.mean(axis=0))
 
-    output_dict = {
-                   'accuracy': np.array(accuracies).mean(),
-                   'balanced_accuracy': np.array(balanced_accuracies).mean(),
-                   'precision': np.array(precisions).mean(),
-                   'recall': np.array(recalls).mean(),
-                   'f1': np.array(f1s).mean(),
-                   'dataset_name': dataset_name,
-                   'model_name': model_name,
-                   'layer_idx_list': layer_idx_list,
-                   'num_prototypes': num_prototypes,
-                   'dev_set_size': dev_set_size,
-                   'version': version,
-                   'seed': seed
-                  }
+    time_diff = time.time() - start_time
+    print("\n\nEnd Time:", cur_time + datetime.timedelta(seconds=int(time_diff)))
+    print("\n\nRun Time:", datetime.timedelta(seconds=int(time_diff)))
+    sys.stdout.flush()
 
-    output_dir = os.path.join(goggles_dir, 'output')
-    run_output_dir = os.path.join(output_dir, str(dataset_name), str(model_name), str(version), 'd' + str(dev_set_size) + '_k' + str(num_prototypes), 'seed_' + str(seed))
-    os.makedirs(run_output_dir, exist_ok=True)
-    with open(os.path.join(run_output_dir, 'output_dict.pkl'), 'wb') as out_fle:
-        pkl.dump(output_dict, out_fle)
+    # output_dict = {
+    #                'accuracy': accuracy.mean(),
+    #                'dataset_name': dataset_name,
+    #                'model_name': model_name,
+    #                'layer_idx_list': layer_idx_list,
+    #                'num_prototypes': num_prototypes,
+    #                'dev_set_size': dev_set_size,
+    #                'version': version,
+    #                'seed': seed
+    #               }
+    #
+    # output_dir = os.path.join(goggles_dir, 'output')
+    # run_output_dir = os.path.join(output_dir, str(dataset_name), str(model_name), str(version), 'd' + str(dev_set_size) + '_k' + str(num_prototypes), 'seed_' + str(seed))
+    # os.makedirs(run_output_dir, exist_ok=True)
+    # with open(os.path.join(run_output_dir, 'output_dict.pkl'), 'wb') as out_fle:
+    #     pkl.dump(output_dict, out_fle)
 
     print("---End of test_audio---")
 
