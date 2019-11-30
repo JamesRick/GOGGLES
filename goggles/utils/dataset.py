@@ -65,8 +65,9 @@ class GogglesDataset(Dataset):
 
 
 class AudioDataset(Dataset):
-    def __init__(self, path, transform, preprocess, meta_df=None):
+    def __init__(self, path, transform, preprocess, name, meta_df=None):
         valid_audio = ['.wav']
+        self.name = name
         self._data_path = path
         self.audio_filename_list = []
         for f in os.listdir(path):
@@ -101,7 +102,7 @@ class AudioDataset(Dataset):
         return len(self.audio_filename_list)
 
     @classmethod
-    def load_all_data(cls, root_dir, preprocess, meta_df=None): #, input_height=96, input_width=64):
+    def load_all_data(cls, root_dir, preprocess, name, meta_df=None): #, input_height=96, input_width=64):
 
         # transform_resize = transforms.Resize((input_height, input_width))
 
@@ -115,6 +116,7 @@ class AudioDataset(Dataset):
             root_dir,
             transform=transformation,
             preprocess=preprocess,
+            name=name,
             meta_df=meta_df)
         return dataset
 
