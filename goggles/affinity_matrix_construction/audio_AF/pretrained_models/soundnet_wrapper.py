@@ -88,6 +88,16 @@ class Soundnet_wrapper(nn.Module):
             x = self._embedding(x)
         return x
 
+    def get_svm_data(self, x, layer_idx=None):
+        assert layer_idx is not None
+        x = x[0]
+        x = torch.from_numpy(x)
+        x = x.view((1,) + x.size()).type('torch.FloatTensor')
+        x = torch.autograd.Variable(x, requires_grad=False)
+        x = self.forward(x, layer_idx=layer_idx)
+        x = x.view(x.size(0), -1)
+        return x.numpy()
+
     def get_layer_type(self, layer_idx):
         return self._config[layer_idx][0]
 
@@ -128,11 +138,15 @@ class Soundnet_wrapper(nn.Module):
 
     @classmethod
     def preprocess(cls, wav_file):
-        length = 22050 * 20
+        # import pdb; pdb.set_trace()
         wav_data, sr = lb.load(wav_file)
-        wav_data = np.concatenate((wav_data, np.zeros(length - wav_data.shape[0])))
+        min_length = sr * 1
+        max_length = sr * 20
+        if wav_data.shape[0] < min_length:
+            wav_data = np.concatenate((wav_data, np.zeros(min_length - wav_data.shape[0])))
+        wav_data = wav_data[:max_length]
         # wav_data = np.tile(wav_data, int(length / wav_data.shape[0] + 1))
-        wav_data = wav_data[:length]
+        # wav_data = wav_data[:length]
         wav_data = wav_data.reshape(1, -1, 1)
         return wav_data, None
 
