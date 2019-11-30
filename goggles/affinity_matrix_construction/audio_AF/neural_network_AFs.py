@@ -56,8 +56,11 @@ def _get_patches(z, patch_idxs, normalize=False):
     """
 
     c = z.size(0)
-
-    patches = z.view(c, -1).t()[patch_idxs]
+    # import pdb; pdb.set_trace()
+    try:
+        patches = z.view(c, -1).t()[patch_idxs]
+    except:
+        import pdb; pdb.set_trace()
     if normalize:
         patches = F.normalize(patches, dim=1)
 
@@ -100,7 +103,6 @@ def _get_most_activated_patch_idxs_from_channels(z, channel_idxs):
 
 
 def _get_score_matrix_for_audio(audio_idx, num_max_proposals, context):
-    # import pdb; pdb.set_trace()
     score_matrix = list()
     column_ids = list()
 
@@ -122,7 +124,9 @@ def _get_score_matrix_for_audio(audio_idx, num_max_proposals, context):
     # In this code, the vectors are indexed using a 1-D index computed from
     # flattening the channel matrix to a one dimensional vector
     pids, ranks = _get_most_activated_patch_idxs_from_channels(z, ch)
-    # import pdb; pdb.set_trace()
+
+    # if range(0,6144) == pids:
+    #     import pdb; pdb.set_trace()
 
     proto_patches = _get_patches(z, pids, normalize=True)
 
@@ -132,10 +136,15 @@ def _get_score_matrix_for_audio(audio_idx, num_max_proposals, context):
         column_ids.append([audio_idx, patch_idx, rank])
 
 
-
     for audio_idx_ in range(len(context.dataset)):
         z_frames_ = context.get_model_output(audio_idx_)
-        z_ = torch.cat(tuple([z_frame_ for z_frame_ in z_frames_.values()]), 1)
+        try:
+            z_ = torch.cat(tuple([z_frame_ for z_frame_ in z_frames_.values()]), 1)
+        except:
+            import pdb; pdb.set_trace()
+
+        num_patches = z_.size(1) * z_.size(2)
+
         spectrogram_patches = _get_patches(z_, range(num_patches), normalize=True)
         scores = torch.matmul(spectrogram_patches, proto_patches.t()).max(0)[0]
         scores = scores.cpu().numpy()
@@ -164,6 +173,7 @@ def audio_nn_AFs(dataset, layer_idx, model, num_max_proposals=10, cache=False, v
     affinity_matrix_list = [[] for _ in range(num_max_proposals)]
     # affinity_matrix_list = [np.zeros((len(dataset),) * 2) for _ in range(num_max_proposals)]
     out_filename = '.'.join([
+    dataset.name,
     version,
     seed,
     fold,
