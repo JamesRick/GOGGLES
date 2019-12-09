@@ -148,7 +148,7 @@ Extract this to the GOGGLES/goggles/ directory if you wish to use these cache fi
 Main run script is GOGGLES/goggles/test/run_audio.py <br/>
 Default parameters will run SoundNet with ESC-10 dataset. <br/>
 
-Parameters:
+Parameters: <br/>
 --layer_idx_list: The list of max pooling layers to gather affinity functions from. [3, 7, 17] for SoundNet. [2, 5, 10, 15] for VGGish. <br/>
 --num_prototypes: Number of prototypes per layer for affinity functions. Default is 10 <br/>
 --dev_set_size:   Size of the development set to use for cluster to class inference. Default is 5. <br/>
