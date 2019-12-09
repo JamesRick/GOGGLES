@@ -11,14 +11,14 @@ pip install -e .
 ## Data Files
 The datasets used can be downloaded from the following links:
 
-ESC-10: https://drive.google.com/file/d/1DyUH55fcSYfzSLjxMAAujXSbT6Gbujdc/view?usp=sharing
-ESC-50: https://drive.google.com/file/d/1mkOOQ0WakozbAKsjhPeMJaTtRng2kgtn/view?usp=sharing
-UrbanSound8K: https://drive.google.com/file/d/1U-lXuzkLSzVN1H_y9bnZdqa0omQa72kW/view?usp=sharing
-TUT-UrbanAcousticScenes: https://drive.google.com/file/d/1qe1gR3B77H_ys52VHXRpJNAD432pxbEe/view?usp=sharing
-LITIS: https://drive.google.com/file/d/19fiBtGrZ_IVWcRdb7-zrrW7-L3Q65TxT/view?usp=sharing
+ESC-10: https://drive.google.com/file/d/1DyUH55fcSYfzSLjxMAAujXSbT6Gbujdc/view?usp=sharing <br/>
+ESC-50: https://drive.google.com/file/d/1mkOOQ0WakozbAKsjhPeMJaTtRng2kgtn/view?usp=sharing <br/>
+UrbanSound8K: https://drive.google.com/file/d/1U-lXuzkLSzVN1H_y9bnZdqa0omQa72kW/view?usp=sharing <br/>
+TUT-UrbanAcousticScenes: https://drive.google.com/file/d/1qe1gR3B77H_ys52VHXRpJNAD432pxbEe/view?usp=sharing <br/>
+LITIS: https://drive.google.com/file/d/19fiBtGrZ_IVWcRdb7-zrrW7-L3Q65TxT/view?usp=sharing <br/>
 
-ESC-10 is the smallest dataset, so this download will be the fastest.
-Download the {dataset-name}.tar.gz file and extract it into the GOGGLES/goggles/data/ folder.
+ESC-10 is the smallest dataset, so this download will be the fastest. <br/>
+Download the {dataset-name}.tar.gz file and extract it into the GOGGLES/goggles/data/ folder. <br/>
 
 IMPORTANT NOTE: Datasets are expected to have the directory names as shown above and be located in the GOGGLES/goggles/data folder.
 
@@ -26,37 +26,37 @@ IMPORTANT NOTE: Datasets are expected to have the directory names as shown above
 tar -xzf {dataset-name}.tar.gz GOGGLES/goggles/data/{dataset-name}
 
 ## VGGish weights
-The weights for the vggish model are stored in the following link:
-VGGish Weights: https://drive.google.com/file/d/1jsFol7qtN1Nsq3vCPF_rVlyV5OmtugLG/view?usp=sharing
+The weights for the vggish model are stored in the following link: <br/>
+VGGish Weights: https://drive.google.com/file/d/1jsFol7qtN1Nsq3vCPF_rVlyV5OmtugLG/view?usp=sharing <br/>
 
-After completing the download place the pytorch_vggish.pth file in the GOGGLES/goggles/torch_vggish directory.
+After completing the download place the pytorch_vggish.pth file in the GOGGLES/goggles/torch_vggish directory. <br/>
 
-IMPORTANT NOTE: These weights are required for running the vggish model and must be placed in the directory as specified above.
+IMPORTANT NOTE: These weights are required for running the vggish model and must be placed in the directory as specified above. <br/>
 
 ## Results and output files
 Results are written to pickle files in the GOGGLES/goggles/output directory. These pickle files are parsed with GOGGLES/goggles/utils/postprocessing.py and converted to a csv located in GOGGLES/goggles/results/full_results.csv
 
 Pickle files and full_results csv for the completed experiments can be downloaded here:
 
-Output Directory: https://drive.google.com/file/d/1gvgjfsPBzm-Fq6AJ_hWAVdYWiwzycThr/view?usp=sharing
-Results Directory: https://drive.google.com/drive/folders/12sW_mwsCp11diny2P3z-Q2px97UXIXCt?usp=sharing
+Output Directory: https://drive.google.com/file/d/1gvgjfsPBzm-Fq6AJ_hWAVdYWiwzycThr/view?usp=sharing <br/>
+Results Directory: https://drive.google.com/drive/folders/12sW_mwsCp11diny2P3z-Q2px97UXIXCt?usp=sharing <br/>
 
 Both of these directories should be placed into the goggles directory
 
 ## \_Scratch directory
-I've also supplied the cached affinity functions for every run of the experiments in the following link:
-\_scratch: https://drive.google.com/file/d/1DBabZ4KUwdRmyL3dVdB3fNxI2e8kZieD/view?usp=sharing
+I've also supplied the cached affinity functions for every run of the experiments in the following link: <br/>
+\_scratch: https://drive.google.com/file/d/1DBabZ4KUwdRmyL3dVdB3fNxI2e8kZieD/view?usp=sharing <br/>
 
 Extract this to the GOGGLES/goggles/ directory if you wish to use these cache files.
 
 ## Example Usage
-Main run script is GOGGLES/goggles/test/run_audio.py
-Default parameters will run SoundNet with ESC-10 dataset.
+Main run script is GOGGLES/goggles/test/run_audio.py <br/>
+Default parameters will run SoundNet with ESC-10 dataset. <br/>
 
 Parameters:
---layer_idx_list: The list of max pooling layers to gather affinity functions from. [3, 7, 17] for SoundNet. [2, 5, 10, 15] for VGGish.
---num_prototypes: Number of prototypes per layer for affinity functions. Default is 10
---dev_set_size:   Size of the development set to use for cluster to class inference. Default is 5.
+--layer_idx_list: The list of max pooling layers to gather affinity functions from. [3, 7, 17] for SoundNet. [2, 5, 10, 15] for VGGish. <br/>
+--num_prototypes: Number of prototypes per layer for affinity functions. Default is 10 <br/>
+--dev_set_size:   Size of the development set to use for cluster to class inference. Default is 5. <br/>
 --model_name:     Name of the model to use. Options: "vggish", "soundnet", "soundnet_svm", "vggish_svm"
 --cache:          Boolean to use cache or not. Default is false, so omit this parameter if you do not wish to use the cache.
 --dataset_name:   Name of the dataset to use. Default is "ESC-10". Options: "ESC-10", "ESC-50", "UrbanSound8K", "TUT-UrbanAcousticScenes", "LITIS"
