@@ -24,12 +24,18 @@ class Context:
 
     def get_model_output(self, audio_idx):
         """
+        VGGish Steps:
         1. Retrieves the preprocessed spectrogram frames from the AudioDatset object
         2. For every spectrogram frame retrieved:
                 Retrieve the output from layer _layer_idx of the model.
                 Add that output to a frame dictionary, with the key being its frame_idx.
-        3. Add the frame dictionary tot he _model_out_dict with audio_idx as the key.
-        4. Return the framed spectrograms for this audio_idx
+        3. Add the frame dictionary to the _model_out_dict with audio_idx as the key.
+        4. Return the framed spectrogram's output of the ith layer of the model for this audio_idx.
+
+        SoundNet Steps:
+        1. Retrieves the audio waveform
+        2. Add the audio waveform to the frame dictionary
+        3. return the audio waveform output of the ith layer of the model for this audio_idx.
         """
         if audio_idx not in self._model_out_dict:
             x_frames, x_full = self.dataset[audio_idx]

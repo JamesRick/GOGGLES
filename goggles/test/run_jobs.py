@@ -148,7 +148,6 @@ def write_slurm_script(layer_idx_lists, model_names, num_prototypes, dev_set_siz
                                     slurmFile.write('#\n')
                                     slurmFile.write(python_command)
 
-                                # time.sleep(0.1)
                                 sp.call(['sbatch', slurm_submit_filename])
                                 j += 1
                                 print(j, "/", total)

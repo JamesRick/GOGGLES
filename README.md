@@ -90,6 +90,9 @@ VGGish Submodule forked from: https://github.com/tcvrick/audioset-vggish-tensorf
 
 torchaudio is not required. <br/>
 python version 3.7 was used. <br/>
+You might experience issues with the soundfile module. Typical solutions involve downloading libsndfile. <br/>
+If you are using anaconda3 try "conda install -c conda-forge soundfile" or "conda install -c conda-forge libsndfile" <br/>
+If not use "sudo apt-get install libsndfile" or "sudo apt-get install libsndfile-dev" to download the appropriate package that is required by the soundfile module.
 </details>
 
 
@@ -218,4 +221,9 @@ python run_audio.py --model_name "soundnet" --layer_idx_list "3" "7" "17" --data
 ```
 ```bash
 python run_audio.py --model_name "soundnet_svm" --layer_idx_list "17" --dataset_name "ESC-10" --dev_set_size 5 --classes "chainsaw" "crackling_fire" --seed 1 --cache 1 --version "v7"
+```
+
+Example without cache: <br/>
+```bash
+python run_audio.py --model_name "vggish" --layer_idx_list "2" "5" "10" "15" --dataset_name "ESC-10" --dev_set_size 5 --classes "chainsaw" "crackling_fire" --seed 1
 ```

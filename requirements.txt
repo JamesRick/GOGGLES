@@ -2,6 +2,8 @@ numpy
 pandas
 tqdm
 scikit-learn
+scikit-image
+seaborn
 scipy
 Pillow
 sox
