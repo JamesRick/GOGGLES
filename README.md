@@ -57,14 +57,15 @@ Parameters:
 --layer_idx_list: The list of max pooling layers to gather affinity functions from. [3, 7, 17] for SoundNet. [2, 5, 10, 15] for VGGish. <br/>
 --num_prototypes: Number of prototypes per layer for affinity functions. Default is 10 <br/>
 --dev_set_size:   Size of the development set to use for cluster to class inference. Default is 5. <br/>
---model_name:     Name of the model to use. Options: "vggish", "soundnet", "soundnet_svm", "vggish_svm"
---cache:          Boolean to use cache or not. Default is false, so omit this parameter if you do not wish to use the cache.
---dataset_name:   Name of the dataset to use. Default is "ESC-10". Options: "ESC-10", "ESC-50", "UrbanSound8K", "TUT-UrbanAcousticScenes", "LITIS"
---seed:           Seed to use for selection of dev set examples. Default is 151.
---version:        Version string for rerunning cache saving but without cache loading. Default is 'v0'
---random_targets: Boolean to use random class pair or not. Default is True.
---classes:        Classes pair to evaluate on. Default is None which means random_targets must be used.
-                  Valid classes per dataset:
+--model_name:     Name of the model to use. Options: "vggish", "soundnet", "soundnet_svm", "vggish_svm". <br/>
+--cache:          Boolean to use cache or not. Default is false, so omit this parameter if you do not wish to use the cache. <br/>
+--dataset_name:   Name of the dataset to use. Default is "ESC-10". Options: "ESC-10", "ESC-50", "UrbanSound8K", "TUT-UrbanAcousticScenes", "LITIS". <br/>
+--seed:           Seed to use for selection of dev set examples. Default is 151. <br/>
+--version:        Version string for rerunning cache saving but without cache loading. Default is 'v0'. <br/>
+--random_targets: Boolean to use random class pair or not. Default is True. <br/>
+--classes:        Classes pair to evaluate on. Default is None which means random_targets must be used. <br/>
+                  Valid classes per dataset: <br/>
+                  ```
                   ESC-10: 'chainsaw', 'clock_tick', 'crackling_fire', 'crying_baby', 'dog',
                           'helicopter', 'rain', 'rooster', 'sea_waves', 'sneezing'
 
@@ -92,28 +93,28 @@ Parameters:
                          'kidgame', 'market', 'metro-paris', 'metro-rouen', 'poolhall',
                          'quietstreet', 'restaurant', 'ruepietonne', 'shop', 'train-ter',
                          'train-tgv', 'tubestation'
+                   ```
+Experiments were performed with the following class pairs per dataset: <br/>
+ESC-10: [['clock_tick', 'helicopter'], ['dog', 'sneezing'], ['chainsaw', 'crackling_fire'], ['rooster', 'dog'], ['clock_tick', 'rain'], <br/>
+        ['rooster', 'rain'], ['helicopter', 'sneezing'], ['clock_tick', 'dog']] <br/>
 
-Experiments were performed with the following class pairs per dataset:
-ESC-10: [['clock_tick', 'helicopter'], ['dog', 'sneezing'], ['chainsaw', 'crackling_fire'], ['rooster', 'dog'], ['clock_tick', 'rain'],
-        ['rooster', 'rain'], ['helicopter', 'sneezing'], ['clock_tick', 'dog']]
+ESC-50: [['insects', 'hand_saw'], ['crickets', 'cow'], ['pouring_water', 'clapping'], ['fireworks', 'crackling_fire'], ['coughing', 'keyboard_typing'], <br/>
+         ['glass_breaking', 'rooster'], ['door_wood_knock', 'engine'], ['can_opening', 'pig'], ['water_drops', 'glass_breaking'], ['snoring', 'brushing_teeth']] <br/>
 
-ESC-50: [['insects', 'hand_saw'], ['crickets', 'cow'], ['pouring_water', 'clapping'], ['fireworks', 'crackling_fire'], ['coughing', 'keyboard_typing'],
-         ['glass_breaking', 'rooster'], ['door_wood_knock', 'engine'], ['can_opening', 'pig'], ['water_drops', 'glass_breaking'], ['snoring', 'brushing_teeth']]
+UrbandSound8K: [['jackhammer', 'siren'], ['air_conditioner', 'children_playing'], ['drilling', 'children_playing'], ['jackhammer', 'children_playing'], <br/>
+                ['jackhammer', 'street_music'], ['siren', 'air_conditioner'], ['air_conditioner', 'dog_bark'], ['drilling', 'gun_shot'], <br/>
+                ['car_horn', 'siren']] <br/>
 
-UrbandSound8K: [['jackhammer', 'siren'], ['air_conditioner', 'children_playing'], ['drilling', 'children_playing'], ['jackhammer', 'children_playing'],
-                ['jackhammer', 'street_music'], ['siren', 'air_conditioner'], ['air_conditioner', 'dog_bark'], ['drilling', 'gun_shot'],
-                ['car_horn', 'siren']]
+TUT-UrbanAcousticScenes: [['park', 'metro_station'], ['bus', 'tram'], ['street_pedestrian', 'street_traffic'], ['street_pedestrian', 'bus'], <br/>
+                          ['metro', 'shopping_mall'], ['street_pedestrian', 'park'], ['shopping_mall', 'street_traffic'], <br/>
+                          ['shopping_mall', 'public_square'], ['airport', 'public_square'],  ['metro_station', 'street_pedestrian']] <br/>
 
-TUT-UrbanAcousticScenes: [['park', 'metro_station'], ['bus', 'tram'], ['street_pedestrian', 'street_traffic'], ['street_pedestrian', 'bus'],
-                          ['metro', 'shopping_mall'], ['street_pedestrian', 'park'], ['shopping_mall', 'street_traffic'],
-                          ['shopping_mall', 'public_square'], ['airport', 'public_square'],  ['metro_station', 'street_pedestrian']]
+LITIS: [['quietstreet', 'kidgame'], ['car', 'ruepietonne'], ['tubestation', 'train-tgv'], <br/>
+        ['poolhall', 'metro-rouen'], ['restaurant', 'metro-paris'], ['car', 'shop'], ['restaurant', 'cafe'], <br/>
+        ['train-ter', 'busystreet'], ['market', 'train-tgv']] <br/>
 
-LITIS: [['quietstreet', 'kidgame'], ['car', 'ruepietonne'], ['tubestation', 'train-tgv'],
-        ['poolhall', 'metro-rouen'], ['restaurant', 'metro-paris'], ['car', 'shop'], ['restaurant', 'cafe'],
-        ['train-ter', 'busystreet'], ['market', 'train-tgv']]
-
-Example commands:
-All experiments were run with version tag: "v7". Use this tag if you wish to use the cache files provided.
+Example commands: <br/>
+All experiments were run with version tag: "v7". Use this tag if you wish to use the cache files provided. <br/>
 ```bash
 python run_audio.py --model_name "vggish" --layer_idx_list "2" "5" "10" "15" --dataset_name "ESC-10" --num_prototypes 5 --dev_set_size 5 --classes "chainsaw" "crackling_fire" --seed 1 --cache 1 --version "v7"
 ```
