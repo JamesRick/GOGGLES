@@ -95,6 +95,7 @@ Parameters:
                          'train-tgv', 'tubestation'
                    ```
 Experiments were performed with the following class pairs per dataset: <br/>
+
 ESC-10: [['clock_tick', 'helicopter'], ['dog', 'sneezing'], ['chainsaw', 'crackling_fire'], ['rooster', 'dog'], ['clock_tick', 'rain'], <br/>
         ['rooster', 'rain'], ['helicopter', 'sneezing'], ['clock_tick', 'dog']] <br/>
 
