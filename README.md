@@ -87,6 +87,8 @@ VGGish Submodule forked from: https://github.com/tcvrick/audioset-vggish-tensorf
     youtube-dl         |       2019.11.5    |            pypi_0    pypi <br/>
     zlib               |       1.2.11       |     h516909a_1006    conda-forge
 <br/>
+<br/>
+
 
 torchaudio is not required. <br/>
 python version 3.7 was used. <br/>
