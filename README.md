@@ -64,36 +64,37 @@ Parameters:
 --version:        Version string for rerunning cache saving but without cache loading. Default is 'v0'. <br/>
 --random_targets: Boolean to use random class pair or not. Default is True. <br/>
 --classes:        Classes pair to evaluate on. Default is None which means random_targets must be used. <br/>
-                  Valid classes per dataset: <br/>
-                  ```
-                  ESC-10: 'chainsaw', 'clock_tick', 'crackling_fire', 'crying_baby', 'dog',
-                          'helicopter', 'rain', 'rooster', 'sea_waves', 'sneezing'
 
-                  ESC-50: 'airplane', 'breathing', 'brushing_teeth', 'can_opening',
-                          'car_horn', 'cat', 'chainsaw', 'chirping_birds', 'church_bells',
-                          'clapping', 'clock_alarm', 'clock_tick', 'coughing', 'cow',
-                          'crackling_fire', 'crickets', 'crow', 'crying_baby', 'dog',
-                          'door_wood_creaks', 'door_wood_knock', 'drinking_sipping',
-                          'engine', 'fireworks', 'footsteps', 'frog', 'glass_breaking',
-                          'hand_saw', 'helicopter', 'hen', 'insects', 'keyboard_typing',
-                          'laughing', 'mouse_click', 'pig', 'pouring_water', 'rain',
-                          'rooster', 'sea_waves', 'sheep', 'siren', 'sneezing', 'snoring',
-                          'thunderstorm', 'toilet_flush', 'train', 'vacuum_cleaner',
-                          'washing_machine', 'water_drops', 'wind'
+Valid classes per dataset: <br/>
 
-                  UrbandSound8K: 'air_conditioner', 'car_horn', 'children_playing', 'dog_bark',
-                                  'drilling', 'engine_idling', 'gun_shot', 'jackhammer', 'siren',
-                                  'street_music'
+    ESC-10: 'chainsaw', 'clock_tick', 'crackling_fire', 'crying_baby', 'dog',
+          'helicopter', 'rain', 'rooster', 'sea_waves', 'sneezing'
 
-                  TUT-UrbanAcousticScenes: 'airport', 'bus', 'metro', 'metro_station', 'park',
-                                           'public_square', 'shopping_mall', 'street_pedestrian',
-                                           'street_traffic', 'tram'
+    ESC-50: 'airplane', 'breathing', 'brushing_teeth', 'can_opening',
+          'car_horn', 'cat', 'chainsaw', 'chirping_birds', 'church_bells',
+          'clapping', 'clock_alarm', 'clock_tick', 'coughing', 'cow',
+          'crackling_fire', 'crickets', 'crow', 'crying_baby', 'dog',
+          'door_wood_creaks', 'door_wood_knock', 'drinking_sipping',
+          'engine', 'fireworks', 'footsteps', 'frog', 'glass_breaking',
+          'hand_saw', 'helicopter', 'hen', 'insects', 'keyboard_typing',
+          'laughing', 'mouse_click', 'pig', 'pouring_water', 'rain',
+          'rooster', 'sea_waves', 'sheep', 'siren', 'sneezing', 'snoring',
+          'thunderstorm', 'toilet_flush', 'train', 'vacuum_cleaner',
+          'washing_machine', 'water_drops', 'wind'
 
-                  LITIS: 'avion', 'bus', 'busystreet', 'cafe', 'car', 'hall', 'hallgare',
-                         'kidgame', 'market', 'metro-paris', 'metro-rouen', 'poolhall',
-                         'quietstreet', 'restaurant', 'ruepietonne', 'shop', 'train-ter',
-                         'train-tgv', 'tubestation'
-                   ```
+    UrbandSound8K: 'air_conditioner', 'car_horn', 'children_playing', 'dog_bark',
+                  'drilling', 'engine_idling', 'gun_shot', 'jackhammer', 'siren',
+                  'street_music'
+
+    TUT-UrbanAcousticScenes: 'airport', 'bus', 'metro', 'metro_station', 'park',
+                           'public_square', 'shopping_mall', 'street_pedestrian',
+                           'street_traffic', 'tram'
+
+    LITIS: 'avion', 'bus', 'busystreet', 'cafe', 'car', 'hall', 'hallgare',
+         'kidgame', 'market', 'metro-paris', 'metro-rouen', 'poolhall',
+         'quietstreet', 'restaurant', 'ruepietonne', 'shop', 'train-ter',
+         'train-tgv', 'tubestation'
+
 Experiments were performed with the following class pairs per dataset: <br/>
 
 ESC-10: [['clock_tick', 'helicopter'], ['dog', 'sneezing'], ['chainsaw', 'crackling_fire'], ['rooster', 'dog'], ['clock_tick', 'rain'], <br/>
