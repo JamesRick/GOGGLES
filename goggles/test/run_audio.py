@@ -186,8 +186,9 @@ def main(layer_idx_list=[3,7,17],
                                                     seed=str(seed),
                                                     classes=classes_name)
 #
-        plt.imshow(afs[0], origin='lower'); plt.show()
-        import pdb; pdb.set_trace()
+        # I was using these lines to plot different heatmaps of the affinity functions.
+        # import pdb; pdb.set_trace()
+        # plt.imshow(afs[0], origin='lower'); plt.show()
         prob = infer_labels(afs, dev_set_indices, dev_set_labels)
         kmeans_pred_labels = KMeans(n_clusters=len(classes)).fit_predict(np.hstack(afs))
         pred_labels = np.argmax(prob, axis=1).astype(int)
@@ -258,7 +259,11 @@ def main(layer_idx_list=[3,7,17],
     sys.stdout.flush()
     balanced_accuracy = balanced_accuracy_score(y_true, pred_labels)
     accuracy = accuracy_score(y_true, pred_labels)
-    kmeans_accuracy = max(balanced_accuracy_score(y_true, pred_labels), 1 - balanced_accuracy_score(y_true, pred_labels))
+    if model_name == 'soundnet' or model_name == 'vggish':
+        kmeans_pred_labels = kmeans_pred_labels[mask.astype(bool)]
+        kmeans_accuracy = max(balanced_accuracy_score(y_true, kmeans_pred_labels), 1 - balanced_accuracy_score(y_true, kmeans_pred_labels))
+    else:
+        kmeans_accuracy = max(balanced_accuracy_score(y_true, pred_labels), 1 - balanced_accuracy_score(y_true, pred_labels))
     print("Kmeans Accuracy: " + str(kmeans_accuracy))
     precision = precision_score(y_true, pred_labels, average='weighted')
     recall = recall_score(y_true, pred_labels, average='weighted')
