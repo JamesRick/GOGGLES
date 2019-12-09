@@ -10,7 +10,7 @@ import argparse as ap
 import subprocess as sp
 import matplotlib.pyplot as plt
 
-from goggles.test.run_audio_2 import load_df
+from goggles.test.run_audio import load_df
 
 def test_slurm_script(layer_idx_lists, model_names, num_prototypes, dev_set_sizes, cache, dataset_names, classes_list):
     j = 0
@@ -46,9 +46,9 @@ def call_sacct():
     print("Current Number of Jobs Submitted: ", num_cur_jobs)
     return num_cur_jobs
 
-def call_squeue():
+def call_squeue(username):
     print("Running wait to submit")
-    p1 = sp.Popen(['squeue', '-u', 'jrick6', '-t', 'PENDING,RUNNING'], stdout=sp.PIPE)
+    p1 = sp.Popen(['squeue', '-u', username, '-t', 'PENDING,RUNNING'], stdout=sp.PIPE)
     p2 = sp.Popen(['wc', '-l'], stdin=p1.stdout, stdout=sp.PIPE)
     p1.stdout.close()
     print("Running communicate")
@@ -60,10 +60,10 @@ def call_squeue():
     p1.kill(); p2.kill()
     return num_cur_jobs
 
-def wait_to_submit():
+def wait_to_submit(username):
     print("Running wait to submit")
     try:
-        num_cur_jobs = call_squeue()
+        num_cur_jobs = call_squeue(username)
     except Exception as e:
         print(str(e))
         time.sleep(5)
@@ -73,26 +73,25 @@ def wait_to_submit():
         for i in tqdm.trange(10, leave=False):
             time.sleep(3)
         try:
-            num_cur_jobs = call_squeue()
+            num_cur_jobs = call_squeue(username)
         except Exception as e:
             print(str(e))
             time.sleep(1)
             num_cur_jobs = call_sacct()
         print("Current Number of Jobs Submitted: ", num_cur_jobs)
 
-def write_slurm_script(layer_idx_lists, model_names, num_prototypes, dev_set_sizes, cache, dataset_names, classes_list, total):
+def write_slurm_script(layer_idx_lists, model_names, num_prototypes, dev_set_sizes, cache, dataset_names, classes_list, total, username):
     j = 0
     for dataset_name, classes in zip(dataset_names, classes_list):
         for cur_class_list in classes:
             for model_layer_list, model_name in zip(layer_idx_lists, model_names):
                 for layer_idx_list in model_layer_list:
-                    wait_to_submit()
+                    wait_to_submit(username)
                     for dev_set_size in dev_set_sizes:
                         time.sleep(0.1)
                         for num_prototype in num_prototypes:
                             for i in range(1, 6):
                                 job_name = 'goggles' + '_' + str(i)
-                                pid_string = str(os.getpid())
                                 version = 'v7'
                                 layer_idx_list_str = ''
                                 for layer in layer_idx_list:
@@ -143,7 +142,7 @@ def write_slurm_script(layer_idx_lists, model_names, num_prototypes, dev_set_siz
                                     slurmFile.write('#SBATCH --output=' + slurm_output_filename + '.out\n')
                                     slurmFile.write('#SBATCH -c 1\n')
                                     slurmFile.write('#SBATCH -t 7-12:00\n')
-                                    slurmFile.write('#SBATCH --exclude=ice[107-122,143-145,149,151-153,160,161,162-165]\n')
+                                    # slurmFile.write('#SBATCH --exclude=ice[107-122,143-145,149,151-153,160,161,162-165]\n')
                                     # slurmFile.write('#SBATCH --gres=gpu')
                                     slurmFile.write('#SBATCH --mem-per-cpu=4G\n')
                                     slurmFile.write('#\n')
@@ -155,44 +154,29 @@ def write_slurm_script(layer_idx_lists, model_names, num_prototypes, dev_set_siz
                                 print(j, "/", total)
 
 
-def main(num_classes=2):
+def main(num_classes=2, username='jrick6'):
     np.random.seed(715)
-    # num_classes = 2
     goggles_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    # dataset_names = ['ESC-10', 'ESC-50', 'UrbanSound8K', 'TUT-UrbanAcousticScenes', 'LITIS']
-    # dataset_names = ['ESC-10', 'ESC-50'] # , 'UrbanSound8K', 'TUT-UrbanAcousticScenes']
-    # dataset_names = ['ESC-10', 'ESC-50', 'UrbanSound8K']
-    # dataset_names = ['ESC-50', 'ESC-10']
-    # dataset_names = ['ESC-10']
-    # dataset_names = ['UrbanSound8K', 'TUT-UrbanAcousticScenes', 'ESC-10', 'ESC-50', 'LITIS']
-    # dataset_names = ['ESC-50', 'TUT-UrbanAcousticScenes', 'LITIS', 'ESC-10']
-    dataset_names = ['TUT-UrbanAcousticScenes', 'LITIS', 'ESC-10']
-    # dataset_names = ['ESC-10', 'ESC-50']
-    # dataset_names = ['LITIS']
+    dataset_names = ['UrbanSound8K', 'TUT-UrbanAcousticScenes', 'ESC-10', 'ESC-50', 'LITIS']
     classes_list = [[] for x in dataset_names]
     for i, dataset_name in enumerate(dataset_names):
         _, df = load_df(goggles_dir, dataset_name)
         for _ in range(10):
             classes = np.random.choice(np.unique(df['category'].values), size=num_classes, replace=False)
             classes_list[i].append(classes.tolist())
+        print(dataset_name)
+        print(classes_list[i])
+
     layer_idx_lists = [[[2, 5, 10, 15]],
                       [[3, 7, 17]],
                       [[17]],
                       [[21]]]
-    # layer_idx_lists = [[[2], [5], [10], [15]],
-    #                   [[3], [7], [17]]]
-    # layer_idx_lists = [[[2,5,10,15]], [[3,7,17]]]
-    # layer_idx_lists = [[[3], [7], [17]], [[17]]]
-    # model_names = ['vggish', 'soundnet']
     model_names = ['vggish', 'soundnet', 'soundnet_svm', 'vggish_svm']
     num_prototypes = np.arange(1, 17)
-    # num_prototypes = np.arange(5, 6)
     dev_set_sizes = np.arange(1, 21)
-    # dev_set_sizes = [5]
     cache = True
-    import pdb; pdb.set_trace()
     total = test_slurm_script(layer_idx_lists, model_names, num_prototypes, dev_set_sizes, cache, dataset_names, classes_list)
-    write_slurm_script(layer_idx_lists, model_names, num_prototypes, dev_set_sizes, cache, dataset_names, classes_list, total)
+    write_slurm_script(layer_idx_lists, model_names, num_prototypes, dev_set_sizes, cache, dataset_names, classes_list, total, username)
     print("Completed Submissions")
     print("Sleeping for 5 seconds")
     time.sleep(5)
@@ -203,6 +187,10 @@ if __name__ == '__main__':
     parser.add_argument('--num_classes',
                         type=int,
                         default=2,
+                        required=False)
+    parser.add_argument('--username',
+                        type=str,
+                        default='jrick6',
                         required=False)
     args = parser.parse_args()
     main(**args.__dict__)
