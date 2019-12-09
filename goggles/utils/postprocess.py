@@ -21,9 +21,11 @@ import multiprocessing as mp
 import matplotlib.pyplot as plt
 
 def plot_varying_dev_size(balanced_df, dataset_names, num_prototypes=5):
+    '''
+    Plot the balanced accuracy as the size of the development set increases.
+    '''
     ymin, ymax=0.5, 1.0
     xmin, xmax=0, 22
-    import pdb; pdb.set_trace()
     colors = ['red', 'blue', 'orange', 'green', 'magenta']
     plt.figure("Varying Size of Development Set")
     for k, (layer_idx_list, model_name) in enumerate(zip(['[3, 7, 17]', '[2, 5, 10, 15]'], ['SoundNet', 'VGGish'])):
@@ -44,6 +46,9 @@ def plot_varying_dev_size(balanced_df, dataset_names, num_prototypes=5):
     plt.show()
 
 def plot_varying_afs(balanced_df, dataset_names, dev_set_size=5):
+    '''
+    Plot the balanced accuracy as the number of affinity functions increases.
+    '''
     ymin, ymax=0.5, 1.0
     xmin, xmax=0, 70
     colors = ['red', 'blue', 'orange', 'green', 'magenta']
@@ -66,6 +71,10 @@ def plot_varying_afs(balanced_df, dataset_names, dev_set_size=5):
     plt.show()
 
 def parse_directories(output_dir):
+    '''
+    Parses the GOGGLES/goggles/output directory to create a dataframe from the
+    pickle files. Writes the dataframe to GOGGLES/goggles/results/full_results.csv
+    '''
     goggles_dir = os.path.dirname(output_dir)
     output_dict = {
                    'accuracy': [],
@@ -121,7 +130,6 @@ def main(results_csv=None):
         df = parse_directories(output_dir)
     else:
         df = pd.read_csv(results_csv, sep=',')
-
     df_group = df.groupby(["dataset_name", "classes", "model_name", "layer_idx_list", "num_prototypes", "num_afs", "dev_set_size", "version"])
     df_filtered = df_group.filter(lambda x: len(x) == 5)
     df_filtered = df_filtered[(df_filtered['layer_idx_list'] == '[3, 7, 17]') | (df_filtered['layer_idx_list'] == '[2, 5, 10, 15]') | (df_filtered['model_name'] == 'soundnet_svm') | (df_filtered['model_name'] == 'vggish_svm')]
