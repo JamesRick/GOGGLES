@@ -24,8 +24,7 @@ class Soundnet_wrapper(nn.Module):
         features = list(base_model.features)
         self._features = nn.ModuleList(features).eval()
 
-        classifier = [base_model.conv8_objs, base_model.conv8_scns]
-        embedding = classifier
+        embedding = [base_model.conv8_objs, base_model.conv8_scns]
         self._embedding = nn.Sequential(*embedding).eval()
 
         self._is_frozen = freeze
@@ -37,7 +36,6 @@ class Soundnet_wrapper(nn.Module):
     def _make_cuda(self, x):
         return x.cuda() if self._is_cuda else x
 
-    # Not sure what the point of this method is.
     def _parse_config(self):
         self.zero_grad()
 
@@ -47,8 +45,6 @@ class Soundnet_wrapper(nn.Module):
 
         self._config = OrderedDict()
         for i, layer in enumerate(self._features):
-            # if i == 24:
-            #     import pdb; pdb.set_trace()
             x = layer(x)
             self._config[i] = (
                 layer.__class__.__name__,
@@ -72,11 +68,7 @@ class Soundnet_wrapper(nn.Module):
             layer_idx = len(self._config) - 1
 
         for i, model in enumerate(self._features):
-            # try:
             x = model(x)
-            # except:
-                # import pdb; pdb.set_trace()
-
             if i == layer_idx:
                 return x
 
@@ -108,12 +100,7 @@ class Soundnet_wrapper(nn.Module):
         is_originally_frozen = self._is_frozen
         self.zero_grad()
         self.freeze(False)
-
-        # image_size = self.input_size
-
-        # batch_shape = (1, 3, image_size, image_size)
         batch_shape = (1, 1, self.input_frame_size, self.input_freq_size)
-
 
         x = self._make_cuda(torch.autograd.Variable(
             torch.rand(*batch_shape), requires_grad=True))
@@ -138,23 +125,17 @@ class Soundnet_wrapper(nn.Module):
 
     @classmethod
     def preprocess(cls, wav_file):
-        # import pdb; pdb.set_trace()
-        wav_data, sr = lb.load(wav_file)
+        wav_data, sr = lb.load(wav_file, mono=True)
         min_length = sr * 1
         max_length = sr * 20
         if wav_data.shape[0] < min_length:
             wav_data = np.concatenate((wav_data, np.zeros(min_length - wav_data.shape[0])))
         wav_data = wav_data[:max_length]
-        # wav_data = np.tile(wav_data, int(length / wav_data.shape[0] + 1))
-        # wav_data = wav_data[:length]
         wav_data = wav_data.reshape(1, -1, 1)
+        wav_data = (((256 - -256)*((wav_data - wav_data.min()) / (wav_data.max() - wav_data.min()))) - 256)
         return wav_data, None
 
 
 if __name__ == '__main__':
-    # input_image_size = 224
-    # expected_image_shape = (3, input_image_size, input_image_size)
-    # input_tensor = torch.autograd.Variable(torch.rand(1, *expected_image_shape))
     net = Soundnet_wrapper()
     print(net._config)
-    # print net(input_tensor)

@@ -39,14 +39,8 @@ class VGGish_wrapper(nn.Module):
     def _make_cuda(self, x):
         return x.cuda() if self._is_cuda else x
 
-    # Not sure what the point of this method is.
     def _parse_config(self):
         self.zero_grad()
-
-        # x = self._make_cuda(torch.autograd.Variable(
-        #     torch.rand(1, 3, self.input_size, self.input_size),
-        #     requires_grad=False))
-
         x = self._make_cuda(torch.autograd.Variable(
             torch.rand(1, 1, self.input_freq_size, self.input_frame_size),
             requires_grad=False))
@@ -68,16 +62,13 @@ class VGGish_wrapper(nn.Module):
         requires_grad = not freeze
         for parameter in self.parameters():
             parameter.requires_grad = requires_grad
-
         self._is_frozen = freeze
 
     def forward(self, x, layer_idx=None):
         if layer_idx is None:
             layer_idx = len(self._config) - 1
-
         for i, model in enumerate(self._features):
             x = model(x)
-
             if i == layer_idx:
                 return x
 
@@ -89,6 +80,16 @@ class VGGish_wrapper(nn.Module):
             x = self._embedding(x)
         return x
 
+    def get_svm_data(self, x):
+        x = x[0]
+        x = torch.from_numpy(x).unsqueeze(dim=0)
+        x = x.view((1,) + x.size()).type('torch.FloatTensor')
+        x = torch.autograd.Variable(x, requires_grad=False)
+        x = self.forward(x)
+        x = x.view(x.size(0), -1)
+        x = self._embedding(x)
+        return x.numpy()
+
     def get_layer_type(self, layer_idx):
         return self._config[layer_idx][0]
 
@@ -99,12 +100,7 @@ class VGGish_wrapper(nn.Module):
         is_originally_frozen = self._is_frozen
         self.zero_grad()
         self.freeze(False)
-
-        # image_size = self.input_size
-
-        # batch_shape = (1, 3, image_size, image_size)
         batch_shape = (1, 1, self.input_freq_size, self.input_frame_size)
-
 
         x = self._make_cuda(torch.autograd.Variable(
             torch.rand(*batch_shape), requires_grad=True))
@@ -133,9 +129,5 @@ class VGGish_wrapper(nn.Module):
 
 
 if __name__ == '__main__':
-    # input_image_size = 224
-    # expected_image_shape = (3, input_image_size, input_image_size)
-    # input_tensor = torch.autograd.Variable(torch.rand(1, *expected_image_shape))
     net = VGGish_wrapper()
     print(net._config)
-    # print net(input_tensor)
