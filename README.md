@@ -97,23 +97,23 @@ Valid classes per dataset: <br/>
 
 Experiments were performed with the following class pairs per dataset: <br/>
 
-ESC-10: [['clock_tick', 'helicopter'], ['dog', 'sneezing'], ['chainsaw', 'crackling_fire'], ['rooster', 'dog'], ['clock_tick', 'rain'], <br/>
-        ['rooster', 'rain'], ['helicopter', 'sneezing'], ['clock_tick', 'dog']] <br/>
+    ESC-10: [['clock_tick', 'helicopter'], ['dog', 'sneezing'], ['chainsaw', 'crackling_fire'], ['rooster', 'dog'], ['clock_tick', 'rain'], <br/>
+            ['rooster', 'rain'], ['helicopter', 'sneezing'], ['clock_tick', 'dog']] <br/>
 
-ESC-50: [['insects', 'hand_saw'], ['crickets', 'cow'], ['pouring_water', 'clapping'], ['fireworks', 'crackling_fire'], ['coughing', 'keyboard_typing'], <br/>
-         ['glass_breaking', 'rooster'], ['door_wood_knock', 'engine'], ['can_opening', 'pig'], ['water_drops', 'glass_breaking'], ['snoring', 'brushing_teeth']] <br/>
+    ESC-50: [['insects', 'hand_saw'], ['crickets', 'cow'], ['pouring_water', 'clapping'], ['fireworks', 'crackling_fire'], ['coughing', 'keyboard_typing'], <br/>
+             ['glass_breaking', 'rooster'], ['door_wood_knock', 'engine'], ['can_opening', 'pig'], ['water_drops', 'glass_breaking'], ['snoring', 'brushing_teeth']] <br/>
 
-UrbandSound8K: [['jackhammer', 'siren'], ['air_conditioner', 'children_playing'], ['drilling', 'children_playing'], ['jackhammer', 'children_playing'], <br/>
-                ['jackhammer', 'street_music'], ['siren', 'air_conditioner'], ['air_conditioner', 'dog_bark'], ['drilling', 'gun_shot'], <br/>
-                ['car_horn', 'siren']] <br/>
+    UrbandSound8K: [['jackhammer', 'siren'], ['air_conditioner', 'children_playing'], ['drilling', 'children_playing'], ['jackhammer', 'children_playing'], <br/>
+                    ['jackhammer', 'street_music'], ['siren', 'air_conditioner'], ['air_conditioner', 'dog_bark'], ['drilling', 'gun_shot'], <br/>
+                    ['car_horn', 'siren']] <br/>
 
-TUT-UrbanAcousticScenes: [['park', 'metro_station'], ['bus', 'tram'], ['street_pedestrian', 'street_traffic'], ['street_pedestrian', 'bus'], <br/>
-                          ['metro', 'shopping_mall'], ['street_pedestrian', 'park'], ['shopping_mall', 'street_traffic'], <br/>
-                          ['shopping_mall', 'public_square'], ['airport', 'public_square'],  ['metro_station', 'street_pedestrian']] <br/>
+    TUT-UrbanAcousticScenes: [['park', 'metro_station'], ['bus', 'tram'], ['street_pedestrian', 'street_traffic'], ['street_pedestrian', 'bus'], <br/>
+                              ['metro', 'shopping_mall'], ['street_pedestrian', 'park'], ['shopping_mall', 'street_traffic'], <br/>
+                              ['shopping_mall', 'public_square'], ['airport', 'public_square'],  ['metro_station', 'street_pedestrian']] <br/>
 
-LITIS: [['quietstreet', 'kidgame'], ['car', 'ruepietonne'], ['tubestation', 'train-tgv'], <br/>
-        ['poolhall', 'metro-rouen'], ['restaurant', 'metro-paris'], ['car', 'shop'], ['restaurant', 'cafe'], <br/>
-        ['train-ter', 'busystreet'], ['market', 'train-tgv']] <br/>
+    LITIS: [['quietstreet', 'kidgame'], ['car', 'ruepietonne'], ['tubestation', 'train-tgv'], <br/>
+            ['poolhall', 'metro-rouen'], ['restaurant', 'metro-paris'], ['car', 'shop'], ['restaurant', 'cafe'], <br/>
+            ['train-ter', 'busystreet'], ['market', 'train-tgv']] <br/>
 
 Example commands: <br/>
 All experiments were run with version tag: "v7". Use this tag if you wish to use the cache files provided. <br/>
