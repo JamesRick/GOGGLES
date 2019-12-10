@@ -24,7 +24,6 @@ def main(wav_file='../data/ESC-10/audio/1-100032-A-0.wav'):
     wav_frames, wav_full = VGGish_wrapper.preprocess(wav_file)
     feature_data, hog_image = hog(wav_full.T, orientations=8, pixels_per_cell=(8, 8),
                         cells_per_block=(1, 1), visualize=True)
-    import pdb; pdb.set_trace()
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(8, 4), sharex=True, sharey=True)
     ax1.axis('off')
     ax1.imshow(wav_full.T)

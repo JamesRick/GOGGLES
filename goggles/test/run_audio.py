@@ -1,4 +1,4 @@
-from goggles import construct_image_affinity_matrices, GogglesDataset, infer_labels
+from goggles import infer_labels
 from goggles.affinity_matrix_construction.construct import construct_audio_affinity_matrices
 from goggles.affinity_matrix_construction.audio_AF.pretrained_models.vggish_wrapper import VGGish_wrapper
 from goggles.affinity_matrix_construction.audio_AF.pretrained_models.soundnet_wrapper import Soundnet_wrapper
@@ -8,9 +8,6 @@ from goggles.utils.dataset import AudioDataset
 
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix, balanced_accuracy_score
 from sklearn.cluster import KMeans
-from sklearn import svm
-from sklearn import preprocessing
-from sklearn import decomposition
 from scipy import stats
 from tqdm import trange
 
@@ -18,18 +15,17 @@ import os
 import re
 import sys
 import torch
-import shutil
 
 import numpy as np
 import pandas as pd
 import pickle as pkl
-import librosa as lb
 import argparse as ap
-import soundfile as sf
-import multiprocessing as mp
 import matplotlib.pyplot as plt
 
 def load_df(goggles_dir, dataset_name):
+    '''
+    Retrieving the meta data dataframe for the dataset_name provided.
+    '''
     if dataset_name == 'ESC-10':
         dataset_csv = os.path.join(goggles_dir, 'data', dataset_name, 'meta/esc10.csv')
         dataset_audio = os.path.join(goggles_dir, 'data', dataset_name, 'audio')
@@ -136,7 +132,7 @@ def main(layer_idx_list=[3,7,17],
             class_mask = (df['category'] == class_name) | class_mask
         df = df[class_mask].sort_values(by=['category']).reset_index(drop=True)
 
-    # Reduce the number of instances since there are only 5 days left for running.
+    # Reduce the number of instances since there are only a few days left for running.
     sizes = df.groupby(['category']).size()
     total = sizes.sum()
     max_instance_size = 200
@@ -159,6 +155,8 @@ def main(layer_idx_list=[3,7,17],
     print("Running with classes: %s" % (str(classes))); sys.stdout.flush()
 
     df = df.sort_values(by=['category']).reset_index(drop=True)
+
+    # Assign selected targets to binary classes 0,1
     map_dict = dict(zip(np.unique(df['target']).tolist(), np.arange(np.unique(df['target']).size).tolist()))
     dev_set_indices = []
     dev_set_labels = []
@@ -205,6 +203,8 @@ def main(layer_idx_list=[3,7,17],
         model.fit(X_train, y_train)
         pred_labels = model.predict(X)
     elif model_name == 'vggish_svm':
+        # Extract the 1 second spectrograms for vggish_svm using preprocessing
+        # expected by vggish model.
         X = []
         y = []
         for j in trange(len(dataset)):
@@ -217,6 +217,9 @@ def main(layer_idx_list=[3,7,17],
                     example.append(model.get_svm_data(wav_data))
             X.append(np.array(example))
             y.append(df['target'].loc[j])
+
+        # Train VGGish_svm on 1 second frames of every example, Using
+        # the label for that example as the label for every 1 second frame.
         X = np.array(X).squeeze()
         y = np.array([map_dict[k] for k in y])
         selected_dev_X, selected_dev_y = X[dev_set_indices], y[dev_set_indices]
@@ -228,6 +231,9 @@ def main(layer_idx_list=[3,7,17],
                 selected_train_y.append(y_label)
         X_train, y_train = np.array(selected_train_X), np.array(selected_train_y)
         model.fit(X_train, y_train)
+
+        # Make VGGish_svm predictions based on the
+        # majority vote of all 1 second frames of an examples
         full_X = []
         full_y = []
         idx = 0
@@ -249,6 +255,7 @@ def main(layer_idx_list=[3,7,17],
             pred_labels.append(prediction)
         pred_labels = np.array(pred_labels)
 
+    # Only evaluate performance on the labels not included in the development set.
     mask = np.ones(len(pred_labels))
     mask[np.array(dev_set_indices)] = 0
     pred_labels = pred_labels[mask.astype(bool)]
@@ -276,6 +283,7 @@ def main(layer_idx_list=[3,7,17],
     print(cf_matrix)
     sys.stdout.flush()
 
+    # create a dictionary of parameters and performance scores
     output_dict = {
                    'accuracy': accuracy,
                    'balanced_accuracy': balanced_accuracy,
@@ -294,6 +302,7 @@ def main(layer_idx_list=[3,7,17],
                    'classes': classes
                   }
 
+    # Save dictionary to output_dict.pkl in the correct directory (run_output_dir below)
     layer_idx_name = re.sub(", ", "_", re.sub(r"\[|\]", "", str(layer_idx_list)))
     output_dir = os.path.join(goggles_dir, 'output')
     run_output_dir = os.path.join(output_dir, str(dataset_name),
